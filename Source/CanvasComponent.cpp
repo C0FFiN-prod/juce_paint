@@ -1,0 +1,485 @@
+﻿#include "../Include/CanvasComponent.h"
+#include "../Include/CanvasSizeComponent.h"
+#include "../Include/Application.h"
+
+#define _(x) juce::String::fromUTF8(u8#x)
+
+CanvasComponent::CanvasComponent(): camera(*this)
+{
+	juce::Graphics g(canvasImage);
+	g.fillAll(juce::Colours::transparentWhite);
+
+	auto* commandManager = PracticeApplication::getInstance()->getCommandManager();
+	commandManager->registerAllCommandsForTarget(this);
+
+	setOpaque(true);
+	setWantsKeyboardFocus(true);
+	setMouseClickGrabsKeyboardFocus(true);
+	// setRepaintsOnMouseActivity(true);
+
+	addAndMakeVisible(horizontalScroll);
+	addAndMakeVisible(verticalScroll);
+
+	horizontalScroll.setColour(juce::ScrollBar::ColourIds::thumbColourId, juce::Colour(0xFFBEBEBE));
+	horizontalScroll.setRangeLimits(0.0, 1.0);
+	horizontalScroll.setCurrentRange(0.0, 1.0);
+
+	verticalScroll.setColour(juce::ScrollBar::ColourIds::thumbColourId, juce::Colour(0xFFBEBEBE));
+	verticalScroll.setRangeLimits(0.0, 1.0);
+	verticalScroll.setCurrentRange(0.0, 1.0);
+
+	horizontalScroll.addListener(this);
+	verticalScroll.addListener(this);
+}
+
+void CanvasComponent::clearCanvas()
+{
+	if (canvasImage.isValid())
+	{
+		juce::Graphics g(canvasImage);
+		g.fillAll(juce::Colours::transparentWhite);
+		repaint();
+	}
+}
+
+void CanvasComponent::paint(juce::Graphics& g)
+{
+	g.fillAll(PEnums::Colours::Gray1);
+
+
+	g.setImageResamplingQuality(juce::Graphics::ResamplingQuality::lowResamplingQuality);
+	auto bImg = canvasImage.getBounds().toFloat();
+	auto bImgCnv = juce::Rectangle<float>(camera.img2cnv(bImg.getTopLeft()), camera.img2cnv(bImg.getBottomRight()));
+
+	g.reduceClipRegion(getLocalBounds());
+
+	PEnums::Colours::Shadow.drawForRectangle(g, bImgCnv.toNearestInt());
+	g.setOpacity(1);
+	if (bgColour.getAlpha() != 255) g.fillCheckerBoard(bImgCnv, 5*camera.getZoom(), 5*camera.getZoom(), PEnums::Colours::White, PEnums::Colours::Gray2);
+	g.setColour(bgColour);
+	g.fillRect(bImgCnv);
+	g.setOpacity(1);
+	g.drawImage(canvasImage, bImgCnv, juce::RectanglePlacement::stretchToFit, false);
+	if (isDrawing && !currentStroke.isEmpty())
+	{
+		auto transform = camera.getTransformImg2Cnv();
+		g.saveState();
+		g.addTransform(transform);
+		drawCurrentPath(g);
+		//g.strokePath(currentStroke, stroke);
+		g.addTransform(juce::AffineTransform());
+		g.restoreState();
+	}
+	if (!isPanning)
+	{
+		float r = brushSize * 0.5f * camera.getZoom();
+		g.setColour(currentColour);
+		switch (selectedTool) {
+		case PEnums::CanvasTool::Pencil:
+			g.fillRect(lastPos.x - r, lastPos.y - r, brushSize * camera.getZoom(), brushSize * camera.getZoom());
+			break;
+		case PEnums::CanvasTool::Brush:
+			g.fillEllipse(lastPos.x - r, lastPos.y - r, brushSize * camera.getZoom(), brushSize * camera.getZoom());
+			break;
+		}
+		
+	}
+}
+
+void CanvasComponent::drawSigleClick(juce::Graphics& g) {
+	float expand = brushSize + 5.0f;
+	g.setColour(currentColour);
+	auto p = camera.cnv2img(lastPos);
+	switch (selectedTool) {
+	case PEnums::CanvasTool::Pencil:
+		g.fillRect((int)(p.x - brushSize * 0.5f),
+			(int)(p.y - brushSize * 0.5f),
+			(int)brushSize, (int)brushSize);
+		break;
+	case PEnums::CanvasTool::Brush:
+		g.fillEllipse(p.x - brushSize * 0.5f,
+			p.y - brushSize * 0.5f,
+			brushSize, brushSize);
+		break;
+	}
+	repaint(p.x - expand, p.y - expand, expand * 2.0f, expand * 2.0f);
+}
+
+void CanvasComponent::drawCurrentPath(juce::Graphics& g) {
+	juce::PathStrokeType stroke{0};
+	g.reduceClipRegion(canvasImage.getBounds());
+	g.setColour(currentColour);
+	switch (selectedTool) {
+	case PEnums::CanvasTool::Pencil:
+		g.setImageResamplingQuality(juce::Graphics::ResamplingQuality::lowResamplingQuality);
+		stroke.setStrokeThickness((int)brushSize);
+		stroke.setJointStyle(juce::PathStrokeType::mitered);
+		stroke.setEndStyle(juce::PathStrokeType::square);
+		break;
+	case PEnums::CanvasTool::Brush:
+		g.setImageResamplingQuality(juce::Graphics::ResamplingQuality::highResamplingQuality);
+		stroke.setStrokeThickness(brushSize);
+		stroke.setJointStyle(juce::PathStrokeType::curved);
+		stroke.setEndStyle(juce::PathStrokeType::rounded);
+		break;
+	}
+	g.strokePath(currentStroke, stroke);
+
+	
+}
+
+void CanvasComponent::resized()
+{
+	camera.resized();
+	if (onCameraChanged) onCameraChanged();
+	updateScrollbars();
+}
+
+void CanvasComponent::mouseExit(const juce::MouseEvent& e)
+{
+	lastPos = juce::Point<float>(-1000, -1000);
+	if (!isPanning)
+		setMouseCursor(juce::MouseCursor::ParentCursor);
+	repaint();
+}
+
+void CanvasComponent::mouseEnter(const juce::MouseEvent& e)
+{
+	setMouseCursor(juce::MouseCursor::CrosshairCursor);
+	repaint();
+}
+
+void CanvasComponent::mouseDown(const juce::MouseEvent& e)
+{
+	if (e.mods.isPopupMenu()) return;
+
+	auto currentPos = e.position.toFloat();
+
+	if (e.mods.isMiddleButtonDown()) 
+	{
+
+		float dirtyR = std::max(brushSize * camera.getZoom() + 5.0f, 20.0f);
+		repaint(currentPos.x - dirtyR, currentPos.y - dirtyR, dirtyR * 2.0f, dirtyR * 2.0f);
+		lastPos = currentPos;
+
+		startPanning(currentPos);
+		return;
+	}
+
+	isDrawing = true;
+	
+	currentStroke.clear();
+
+	switch (selectedTool) {
+	case PEnums::CanvasTool::Pencil:
+		currentStroke.startNewSubPath(camera.cnv2img(currentPos).roundToInt().toFloat());
+		break;
+	case PEnums::CanvasTool::Brush:
+		currentStroke.startNewSubPath(camera.cnv2img(currentPos));
+		break;
+	}
+
+	float dirtyR = std::max(brushSize * camera.getZoom() + 5.0f, 20.0f);
+	repaint(currentPos.x - dirtyR, currentPos.y - dirtyR, dirtyR * 2.0f, dirtyR * 2.0f);
+	lastPos = currentPos;
+}
+
+void CanvasComponent::startPanning(juce::Point<float> startPos)
+{
+	isPanning = true;
+	lastPos = startPos;
+	setMouseCursor(juce::MouseCursor::DraggingHandCursor);
+}
+
+void CanvasComponent::mouseMove(const juce::MouseEvent& e)
+{
+	if (isPanning || isDrawing) return;
+
+	float dirtyR = std::max(brushSize * camera.getZoom() + 5.0f, 20.0f);
+	repaint(juce::Rectangle<float>(lastPos, e.position.toFloat())
+		.expanded(dirtyR).toNearestInt());
+
+	lastPos = e.position.toFloat();
+	if (onCameraChanged) onCameraChanged();
+}
+
+void CanvasComponent::mouseDrag(const juce::MouseEvent& e)
+{
+	auto currentPos = e.position.toFloat();
+	if (isPanning)
+	{
+		auto delta = e.position.toFloat() - lastPos;
+		camera.moveBy(delta);
+		updateScrollbars();
+		auto bImg = canvasImage.getBounds().toFloat();
+		auto bImgCnv = juce::Rectangle<float>(camera.img2cnv(bImg.getTopLeft()), camera.img2cnv(bImg.getBottomRight()));
+
+		float dirtyR = std::max(brushSize * camera.getZoom() + 5.0f, 20.0f);
+		repaint(juce::Rectangle<float>(lastPos, currentPos)
+			.expanded(dirtyR).toNearestInt());
+
+		repaint(bImgCnv.expanded(std::abs(delta.x) + camera.wiggle, std::abs(delta.y) + camera.wiggle).toNearestInt());
+		lastPos = currentPos;
+		if (onCameraChanged) onCameraChanged();
+		return;
+	}
+
+	if (!isDrawing)
+		return;
+
+
+	auto newImgPos = camera.cnv2img(currentPos);
+	float distance = 0;
+	switch (selectedTool) {
+	case PEnums::CanvasTool::Pencil:
+		newImgPos = newImgPos.roundToInt().toFloat();
+		if ((int)brushSize % 2 == 1) newImgPos.addXY(0.5f, 0.5f);
+
+		distance = currentStroke.getCurrentPosition().getDistanceFrom(newImgPos);
+
+		if (distance < 1.f) {
+			lastPos = currentPos;
+			if (onCameraChanged) onCameraChanged();
+			return;
+		}
+		currentStroke.lineTo(newImgPos);
+		break;
+	case PEnums::CanvasTool::Brush:
+		currentStroke.lineTo(newImgPos);
+		break;
+	}
+
+	float dirtyR = std::max(brushSize * camera.getZoom() + 5.0f, 20.0f);
+	repaint(juce::Rectangle<float>(lastPos, currentPos)
+		.expanded(dirtyR).toNearestInt());
+	lastPos = currentPos;
+	if (onCameraChanged) onCameraChanged();
+}
+
+void CanvasComponent::mouseUp(const juce::MouseEvent&)
+{
+	if (isPanning)
+	{
+		isPanning = false;
+		setMouseCursor(juce::MouseCursor::CrosshairCursor);
+		return;
+	}
+	
+	if (!isDrawing)
+		return;
+	isDrawing = false;
+
+	if (!canvasImage.isValid())
+	{
+		currentStroke.clear();
+		return;
+	}
+
+	juce::Graphics g(canvasImage);
+	float expand = brushSize + 5.0f;
+	if (!currentStroke.isEmpty())
+	{
+		drawCurrentPath(g);
+		auto bStroke = currentStroke.getBounds().expanded(expand);
+		repaint(juce::Rectangle<float>(camera.img2cnv(bStroke.getTopLeft()), camera.img2cnv(bStroke.getBottomRight())).toNearestInt());
+		currentStroke.clear();
+	}
+	else
+	{
+		drawSigleClick(g);
+	}
+}
+
+juce::ApplicationCommandTarget* CanvasComponent::getNextCommandTarget()
+{
+	return nullptr;// findFirstTargetParentComponent();
+}
+
+void CanvasComponent::getAllCommands(juce::Array<juce::CommandID>& c)
+{
+	c.add(PEnums::CommandIDs::CanvasResize);
+}
+
+void CanvasComponent::getCommandInfo(juce::CommandID commandID, juce::ApplicationCommandInfo& result)
+{
+	switch (commandID)
+	{
+	case PEnums::CommandIDs::CanvasResize:
+		result.setInfo(_(Размер холста...), juce::String::fromUTF8(u8"Изменить размер рабочей области"), juce::String::fromUTF8(u8"Изображение"), 0);
+		result.addDefaultKeypress('C', juce::ModifierKeys::commandModifier); // Cmd/Ctrl + C
+		result.setActive(true);
+		break;
+	case PEnums::CommandIDs::CanvasClear:
+		result.setInfo(juce::String::fromUTF8(u8"Размер холста..."), juce::String::fromUTF8(u8"Изменить размер рабочей области"), juce::String::fromUTF8(u8"Изображение"), 0);
+		result.addDefaultKeypress('C', juce::ModifierKeys::commandModifier); // Cmd/Ctrl + C
+		result.setActive(true);
+		break;
+	}
+}
+
+bool CanvasComponent::perform(const juce::ApplicationCommandTarget::InvocationInfo& info)
+{
+	switch (info.commandID)
+	{
+	case PEnums::CommandIDs::CanvasResize:
+		showCanvasSizeDialog();
+		return true;
+	default:
+		return false;
+	}
+}
+
+void CanvasComponent::showCanvasSizeDialog()
+{
+	auto bounds = getBounds();
+
+	CanvasSizeComponent::show(getTopLevelComponent(), bounds,
+		canvasImage.getWidth(),
+		canvasImage.getHeight(),
+		[this](int w, int h, int ox, int oy)
+		{ applyCanvasResize(w, h, ox, oy); });
+}
+
+void CanvasComponent::applyCanvasResize(int newW, int newH, int offsetX, int offsetY)
+{
+	if (newW == canvasImage.getWidth() && newH == canvasImage.getHeight())
+		return;
+
+	juce::Image newImage(juce::Image::PixelFormat::ARGB, newW, newH, true);
+	juce::Graphics g(newImage);
+	g.drawImageAt(canvasImage, offsetX, offsetY);
+
+	canvasImage = std::move(newImage);
+	if (onCameraChanged) onCameraChanged();
+	camera.resized();
+	repaint();
+}
+
+void CanvasComponent::mouseWheelMove(const juce::MouseEvent& e, const juce::MouseWheelDetails& wheel)
+{
+	if (!canvasImage.isValid() || isDrawing) return;
+	if (onCameraChanged) onCameraChanged();
+	if (e.mods.isCommandDown())
+	{
+		camera.zoom(wheel.deltaY > 0, e.position);
+		updateScrollbars();
+		repaint();
+		return;
+	}
+
+	scrollbarPan(e.mods.isShiftDown() || horizontalScroll.getBounds().contains(e.position.toInt()), wheel.deltaY > 0);
+}
+
+void CanvasComponent::scrollbarPan(bool isHorizontal, bool isPositive)
+{
+	const float step = 0.05f * camera.getZoom() * (isPositive ? 1.0f : -1.0f);
+
+	if (isHorizontal)
+	{
+		float newStart = juce::jlimit(0.0, 1.0, horizontalScroll.getCurrentRangeStart() - step);
+		horizontalScroll.setCurrentRangeStart(newStart, juce::sendNotification);
+	}
+	else
+	{
+		float newStart = juce::jlimit(0.0, 1.0, verticalScroll.getCurrentRangeStart() - step);
+		verticalScroll.setCurrentRangeStart(newStart, juce::sendNotification);
+	}
+}
+
+void CanvasComponent::updateScrollbars()
+{
+	if (!canvasImage.isValid())
+	{
+		horizontalScroll.setVisible(false);
+		verticalScroll.setVisible(false);
+		return;
+	}
+
+	const float minThumbSize = 0.05f;
+	const bool needHScroll = camera.maxX() > 0.001f;
+	const bool needVScroll = camera.maxY() > 0.001f;
+
+	horizontalScroll.setVisible(needHScroll);
+	verticalScroll.setVisible(needVScroll);
+
+	if (needHScroll)
+	{
+		const float width = static_cast<float>(getWidth());
+		const float thumbSize = juce::jlimit(minThumbSize, 1.0f,
+			width / (width + 2 * camera.maxX()));
+
+		const float start = juce::jlimit(0.0f, 1.0f,
+			0.5f - camera.x() / (2.0f * camera.maxX()));
+
+		horizontalScroll.setRangeLimits(0.0, 1.f + thumbSize);
+		horizontalScroll.setCurrentRange(start, thumbSize, juce::dontSendNotification);
+	}
+	else
+	{
+		horizontalScroll.setRangeLimits(0.0, 1.0);
+		horizontalScroll.setCurrentRange(0.0, 1.0, juce::dontSendNotification);
+	}
+
+	if (needVScroll)
+	{
+		const float height = static_cast<float>(getHeight());
+		const float thumbSize = juce::jlimit(minThumbSize, 1.0f,
+			height / (height + 2 * camera.maxY()));
+
+		const float start = juce::jlimit(0.0f, 1.0f,
+			0.5f - camera.y() / (2.0f * camera.maxY()));
+
+		verticalScroll.setRangeLimits(0.0, 1.f + thumbSize);
+		verticalScroll.setCurrentRange(start, thumbSize, juce::dontSendNotification);
+	}
+	else
+	{
+		verticalScroll.setRangeLimits(0.0, 1.0);
+		verticalScroll.setCurrentRange(0.0, 1.0, juce::dontSendNotification);
+	}
+
+	updateScrollBarLayout();
+}
+
+void CanvasComponent::scrollBarMoved(juce::ScrollBar* scrollBar, double newStart)
+{
+	if (!canvasImage.isValid()) return;
+
+	if (scrollBar == &horizontalScroll)
+	{
+		const float maxX = camera.maxX();
+		const float newX = (0.5f - static_cast<float>(newStart)) * 2.0f * maxX;
+		if (maxX > 0.001f) camera.setX(newX);
+	}
+	else if (scrollBar == &verticalScroll)
+	{
+		const float maxY = camera.maxY();
+		const float newY = (0.5f - static_cast<float>(newStart)) * 2.0f * maxY;
+		if (maxY > 0.001f) camera.setY(newY);
+	}
+
+	repaint();
+}
+
+void CanvasComponent::updateScrollBarLayout()
+{
+	const int scrollBarThickness = 8;
+	const int padding = 5;
+	auto bounds = getLocalBounds();
+	bounds.reduce(padding, padding);
+	bounds.removeFromLeft(scrollBarThickness);
+	bounds.removeFromTop(scrollBarThickness);
+	
+	if (verticalScroll.isVisible())
+	{
+		auto bVS = bounds.removeFromRight(scrollBarThickness);
+		bVS.removeFromBottom(scrollBarThickness);
+		verticalScroll.setBounds(bVS);
+	}
+
+	if (horizontalScroll.isVisible())
+	{
+		horizontalScroll.setBounds(bounds.removeFromBottom(scrollBarThickness));
+	}
+}
+
