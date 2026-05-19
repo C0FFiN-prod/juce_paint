@@ -41,17 +41,6 @@ ColorPickerPopup::~ColorPickerPopup()
 
 void ColorPickerPopup::paint(juce::Graphics &g)
 {
-	juce::Path p;
-	p.addRoundedRectangle(getLocalBounds().toFloat().reduced(0.5f), 10.0f);
-
-	DropShadow(Colours::black.withAlpha(0.5f), 5, { 0, 0 })
-		.drawForPath(g, p);
-
-	g.setColour(juce::Colour(0xFFFFFFFF));
-	g.fillPath(p);
-	g.setColour(juce::Colour(0xFFBEBEBE));
-	g.strokePath(p, juce::PathStrokeType(1));
-
 	// 3. Квадрат выбора цвета
 	paintColourSquare(g);
 

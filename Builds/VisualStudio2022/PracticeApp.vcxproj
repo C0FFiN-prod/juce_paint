@@ -3762,11 +3762,10 @@
     <ClInclude Include="..\..\Include\MainFrame.h" />
     <ClInclude Include="..\..\Include\MonospaceFontTextButtonLookAndFeel.h" />
     <ClInclude Include="..\..\Include\Separator.h" />
-    <ClInclude Include="..\..\Include\SliderLookAndFeel.h" />
     <ClInclude Include="..\..\Include\StatusBarComponent.h" />
     <ClInclude Include="..\..\Include\ToolbarComponent.h" />
     <ClInclude Include="..\..\Include\ToolButtonComponent.h" />
-    <ClInclude Include="..\..\Include\TransparentCallOutBoxLookAndFeel.h" />
+    <ClInclude Include="..\..\Include\CustomLookAndFeel.h" />
     <ClInclude Include="..\..\Include\TriangleBrushSlider.h" />
     <ClInclude Include="..\..\JuceLibraryCode\JuceHeader.h" />
   </ItemGroup>

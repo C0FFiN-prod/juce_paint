@@ -6488,7 +6488,7 @@
     <ClInclude Include="..\..\Include\ColorPickerPopup.h">
       <Filter>Headers Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Include\TransparentCallOutBoxLookAndFeel.h">
+    <ClInclude Include="..\..\Include\CustomLookAndFeel.h">
       <Filter>Headers Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Include\BrushSizeComponent.h">
@@ -6507,9 +6507,6 @@
       <Filter>Headers Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Include\StatusBarComponent.h">
-      <Filter>Headers Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Include\SliderLookAndFeel.h">
       <Filter>Headers Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Include\Enums.h">

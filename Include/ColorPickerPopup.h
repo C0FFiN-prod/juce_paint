@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 //
 #include "../JuceLibraryCode/JuceHeader.h"
 
@@ -21,12 +21,12 @@ public:
 private:
     enum ColorSource
     {
-        None = 0,
-        Square = 1,
-        HUE = 2,
-        Alpha = 3,
-        HEX = 4,
-        Swatch = 5,
+        None,
+        Square,
+        HUE,
+        Alpha,
+        HEX,
+        Swatch,
     };
 
     void colourChanged(juce::Colour &c, ColorSource s);

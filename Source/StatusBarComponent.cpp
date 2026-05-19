@@ -1,6 +1,5 @@
 ﻿#include "../Include/StatusBarComponent.h"
-#include "../Include/Application.h"
-#include "../Include/SliderLookAndFeel.h"
+#include "../Include/Enums.h"
 
 #define _(x) juce::String::fromUTF8(u8#x)
 
@@ -8,16 +7,18 @@ StatusBarComponent::StatusBarComponent(CanvasComponent& cnv) : canvas(cnv)
 {
     setOpaque(false);
 
+    const juce::Font font(16.0f);
+
     cursorPosLabel.setJustificationType(juce::Justification::centredRight);
-    cursorPosLabel.setColour(juce::Label::ColourIds::textColourId, juce::Colour(0xFF191919));
-    cursorPosLabel.setFont(juce::Font(11.0f));
+    cursorPosLabel.setColour(juce::Label::ColourIds::textColourId, PEnums::Colours::Text);
+    cursorPosLabel.setFont(font);
     cursorPosLabel.setText(_(0×0), juce::dontSendNotification);
     addAndMakeVisible(cursorPosLabel);
 
     imageSizeLabel.setJustificationType(juce::Justification::centredRight);
-    imageSizeLabel.setColour(juce::Label::ColourIds::textColourId, juce::Colour(0xFF191919));
-    imageSizeLabel.setFont(juce::Font(11.0f));
-    imageSizeLabel.setText(_(0×0 пикс.), juce::dontSendNotification);
+    imageSizeLabel.setColour(juce::Label::ColourIds::textColourId, PEnums::Colours::Text);
+    imageSizeLabel.setFont(font);
+    imageSizeLabel.setText(_(0×0 px), juce::dontSendNotification);
     addAndMakeVisible(imageSizeLabel);
 
     auto zoomRange = canvas.getZoomRange();
@@ -25,8 +26,7 @@ StatusBarComponent::StatusBarComponent(CanvasComponent& cnv) : canvas(cnv)
     zoomSlider.setSkewFactorFromMidPoint(1);
     zoomSlider.setSliderStyle(juce::Slider::LinearHorizontal);
     zoomSlider.setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
-    static SliderLookAndFeel thinLAF;
-    zoomSlider.setLookAndFeel(&thinLAF);
+
     zoomSlider.onValueChange = [this]() {
         canvas.setZoom(zoomSlider.getValue()); canvas.repaint(); updated();
         };
@@ -34,8 +34,8 @@ StatusBarComponent::StatusBarComponent(CanvasComponent& cnv) : canvas(cnv)
     addAndMakeVisible(zoomSlider);
 
     zoomPercentLabel.setJustificationType(juce::Justification::centredLeft);
-    zoomPercentLabel.setColour(juce::Label::ColourIds::textColourId, juce::Colour(0xFF191919));
-    zoomPercentLabel.setFont(juce::Font(11.0f));
+    zoomPercentLabel.setColour(juce::Label::ColourIds::textColourId, PEnums::Colours::Text);
+    zoomPercentLabel.setFont(font);
     zoomPercentLabel.setText("100%", juce::dontSendNotification);
 
     addAndMakeVisible(zoomPercentLabel);
@@ -50,8 +50,7 @@ void StatusBarComponent::paint(juce::Graphics& g)
 
 void StatusBarComponent::resized()
 {
-    const int gap = 10;
-    const int height = getHeight() - 2;
+    const int height = getHeight();
 
     juce::FlexBox fb;
     fb.flexDirection = juce::FlexBox::Direction::row;
@@ -59,13 +58,14 @@ void StatusBarComponent::resized()
     fb.alignItems = juce::FlexBox::AlignItems::center;
     fb.alignContent = juce::FlexBox::AlignContent::center;
 
-    const int lISw = imageSizeLabel.getFont().getStringWidth(imageSizeLabel.getText());
-    fb.items.add(juce::FlexItem(cursorPosLabel).withHeight(height).withMinWidth(60).withMargin({ 0, 0, 0, gap }));
-    fb.items.add(juce::FlexItem(imageSizeLabel).withHeight(height).withWidth(lISw).withMargin({ 0, 0, 0, gap }));
-    fb.items.add(juce::FlexItem(zoomSlider).withHeight(height).withWidth(100).withMargin({ 0, 0, 0, gap }));
-    fb.items.add(juce::FlexItem(zoomPercentLabel).withHeight(height).withWidth(40));
+    const int lISw = imageSizeLabel.getFont().getStringWidth("M") * 13;
+    const int lZPw = zoomPercentLabel.getFont().getStringWidth("M") * 5;
+    fb.items.add(juce::FlexItem(cursorPosLabel).withHeight(height).withWidth(lISw));
+    fb.items.add(juce::FlexItem(imageSizeLabel).withHeight(height).withWidth(lISw));
+    fb.items.add(juce::FlexItem(zoomSlider).withHeight(height).withWidth(100));
+    fb.items.add(juce::FlexItem(zoomPercentLabel).withHeight(height).withMinWidth(lZPw));
 
-    fb.performLayout(getLocalBounds().reduced(5, 0).toFloat());
+    fb.performLayout(getLocalBounds().reduced(3, 0).toFloat());
 }
 
 void StatusBarComponent::updated()
@@ -81,14 +81,14 @@ void StatusBarComponent::updated()
 
     const int imgW = canvas.getCanvasImage().getWidth();
     const int imgH = canvas.getCanvasImage().getHeight();
-    imageSizeLabel.setText(juce::String(imgW) + _(×) + juce::String(imgH) + _(пикс.),
+    imageSizeLabel.setText(juce::String(imgW) + _(×) + juce::String(imgH) + "px",
         juce::dontSendNotification);
 
     if (canvas.isCursorOverImg()) {
         auto cursorImgPos = canvas.getCursorImgPos();
         cursorPosLabel.setText(
-            juce::String(static_cast<int>(cursorImgPos.x)) + _(×) +
-            juce::String(static_cast<int>(cursorImgPos.y)),
+            juce::String(static_cast<int>(cursorImgPos.x + 1)) + _(×) +
+            juce::String(static_cast<int>(cursorImgPos.y + 1)),
             juce::dontSendNotification);
         cursorPosLabel.setVisible(true);
     }

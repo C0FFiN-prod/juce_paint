@@ -7,8 +7,6 @@ public:
     CanvasSizeComponent(int w, int h,
                         std::function<void(int newW, int newH, int offsetX, int offsetY)> onApply);
 
-    void paint(juce::Graphics &g) override;
-
     void resized() override;
 
     static void show(juce::Component *anchor, juce::Rectangle<int> anchorArea,

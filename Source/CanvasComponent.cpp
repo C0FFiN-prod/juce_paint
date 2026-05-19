@@ -70,7 +70,7 @@ void CanvasComponent::paint(juce::Graphics& g)
 		g.addTransform(juce::AffineTransform());
 		g.restoreState();
 	}
-	if (!isPanning)
+	if (needBrushDraw)
 	{
 		float r = brushSize * 0.5f * camera.getZoom();
 		g.setColour(currentColour);
@@ -82,7 +82,6 @@ void CanvasComponent::paint(juce::Graphics& g)
 			g.fillEllipse(lastPos.x - r, lastPos.y - r, brushSize * camera.getZoom(), brushSize * camera.getZoom());
 			break;
 		}
-		
 	}
 }
 
@@ -92,11 +91,13 @@ void CanvasComponent::drawSigleClick(juce::Graphics& g) {
 	auto p = camera.cnv2img(lastPos);
 	switch (selectedTool) {
 	case PEnums::CanvasTool::Pencil:
+		g.setImageResamplingQuality(juce::Graphics::ResamplingQuality::lowResamplingQuality);
 		g.fillRect((int)(p.x - brushSize * 0.5f),
 			(int)(p.y - brushSize * 0.5f),
 			(int)brushSize, (int)brushSize);
 		break;
 	case PEnums::CanvasTool::Brush:
+		g.setImageResamplingQuality(juce::Graphics::ResamplingQuality::highResamplingQuality);
 		g.fillEllipse(p.x - brushSize * 0.5f,
 			p.y - brushSize * 0.5f,
 			brushSize, brushSize);
@@ -116,16 +117,30 @@ void CanvasComponent::drawCurrentPath(juce::Graphics& g) {
 		stroke.setJointStyle(juce::PathStrokeType::mitered);
 		stroke.setEndStyle(juce::PathStrokeType::square);
 		break;
-	case PEnums::CanvasTool::Brush:
+	default:
 		g.setImageResamplingQuality(juce::Graphics::ResamplingQuality::highResamplingQuality);
 		stroke.setStrokeThickness(brushSize);
 		stroke.setJointStyle(juce::PathStrokeType::curved);
 		stroke.setEndStyle(juce::PathStrokeType::rounded);
 		break;
 	}
-	g.strokePath(currentStroke, stroke);
 
-	
+	g.strokePath(currentStroke, stroke);
+}
+
+void CanvasComponent::repaintUnderCursor(juce::Point<float> pos)
+{
+	float dirtyR = std::max(brushSize * camera.getZoom() + 5.0f, 20.0f);
+	repaint(pos.x - dirtyR, pos.y - dirtyR, dirtyR * 2.0f, dirtyR * 2.0f);
+	lastPos = pos;
+}
+
+void CanvasComponent::repaintToCursor(juce::Point<float> pos)
+{
+	float dirtyR = std::max(brushSize * camera.getZoom() + 5.0f, 20.0f);
+	repaint(juce::Rectangle<float>(lastPos, pos)
+		.expanded(dirtyR).toNearestInt());
+	lastPos = pos;
 }
 
 void CanvasComponent::resized()
@@ -151,42 +166,44 @@ void CanvasComponent::mouseEnter(const juce::MouseEvent& e)
 
 void CanvasComponent::mouseDown(const juce::MouseEvent& e)
 {
-	if (e.mods.isPopupMenu()) return;
-
 	auto currentPos = e.position.toFloat();
-
-	if (e.mods.isMiddleButtonDown()) 
+	if (e.mods.isRightButtonDown())
 	{
-
-		float dirtyR = std::max(brushSize * camera.getZoom() + 5.0f, 20.0f);
-		repaint(currentPos.x - dirtyR, currentPos.y - dirtyR, dirtyR * 2.0f, dirtyR * 2.0f);
-		lastPos = currentPos;
-
-		startPanning(currentPos);
+		isDrawing = false;
+		currentStroke.clear();
+		repaint();
+		
 		return;
 	}
 
-	isDrawing = true;
-	
-	currentStroke.clear();
-
-	switch (selectedTool) {
-	case PEnums::CanvasTool::Pencil:
-		currentStroke.startNewSubPath(camera.cnv2img(currentPos).roundToInt().toFloat());
-		break;
-	case PEnums::CanvasTool::Brush:
-		currentStroke.startNewSubPath(camera.cnv2img(currentPos));
-		break;
+	if (e.mods.isMiddleButtonDown()) 
+	{
+		startPanning(currentPos);
 	}
 
-	float dirtyR = std::max(brushSize * camera.getZoom() + 5.0f, 20.0f);
-	repaint(currentPos.x - dirtyR, currentPos.y - dirtyR, dirtyR * 2.0f, dirtyR * 2.0f);
-	lastPos = currentPos;
+	if (e.mods.isLeftButtonDown()) {
+		isDrawing = true;
+		startPos = currentPos;
+		imgStartPos = camera.cnv2img(currentPos);
+		currentStroke.clear();
+
+		switch (selectedTool) {
+		case PEnums::CanvasTool::Pencil:
+			currentStroke.startNewSubPath(imgStartPos.roundToInt().toFloat());
+			break;
+		case PEnums::CanvasTool::Brush:
+			currentStroke.startNewSubPath(imgStartPos);
+			break;
+		}
+
+	}
+	repaintUnderCursor(currentPos);
 }
 
 void CanvasComponent::startPanning(juce::Point<float> startPos)
 {
 	isPanning = true;
+	needBrushDraw = false;
 	lastPos = startPos;
 	setMouseCursor(juce::MouseCursor::DraggingHandCursor);
 }
@@ -195,72 +212,219 @@ void CanvasComponent::mouseMove(const juce::MouseEvent& e)
 {
 	if (isPanning || isDrawing) return;
 
-	float dirtyR = std::max(brushSize * camera.getZoom() + 5.0f, 20.0f);
-	repaint(juce::Rectangle<float>(lastPos, e.position.toFloat())
-		.expanded(dirtyR).toNearestInt());
-
-	lastPos = e.position.toFloat();
+	repaintToCursor(e.position);
 	if (onCameraChanged) onCameraChanged();
 }
 
 void CanvasComponent::mouseDrag(const juce::MouseEvent& e)
 {
+	if (e.mods.currentModifiers.isRightButtonDown())
+	{
+		isDrawing = false;
+
+		auto bImg = currentStroke.getBounds().toFloat().expanded(brushSize + 5);
+		auto bImgCnv = juce::Rectangle<float>(camera.img2cnv(bImg.getTopLeft()), camera.img2cnv(bImg.getBottomRight()));
+		currentStroke.clear();
+		repaint(bImgCnv.toNearestInt());
+		return;
+	}
+
 	auto currentPos = e.position.toFloat();
 	if (isPanning)
 	{
-		auto delta = e.position.toFloat() - lastPos;
+		auto delta = currentPos - lastPos;
 		camera.moveBy(delta);
 		updateScrollbars();
 		auto bImg = canvasImage.getBounds().toFloat();
 		auto bImgCnv = juce::Rectangle<float>(camera.img2cnv(bImg.getTopLeft()), camera.img2cnv(bImg.getBottomRight()));
 
-		float dirtyR = std::max(brushSize * camera.getZoom() + 5.0f, 20.0f);
-		repaint(juce::Rectangle<float>(lastPos, currentPos)
-			.expanded(dirtyR).toNearestInt());
+		repaintToCursor(currentPos);
 
 		repaint(bImgCnv.expanded(std::abs(delta.x) + camera.wiggle, std::abs(delta.y) + camera.wiggle).toNearestInt());
-		lastPos = currentPos;
 		if (onCameraChanged) onCameraChanged();
 		return;
 	}
 
-	if (!isDrawing)
-		return;
+	if (isDrawing) {
 
 
-	auto newImgPos = camera.cnv2img(currentPos);
-	float distance = 0;
-	switch (selectedTool) {
-	case PEnums::CanvasTool::Pencil:
-		newImgPos = newImgPos.roundToInt().toFloat();
-		if ((int)brushSize % 2 == 1) newImgPos.addXY(0.5f, 0.5f);
 
-		distance = currentStroke.getCurrentPosition().getDistanceFrom(newImgPos);
 
-		if (distance < 1.f) {
-			lastPos = currentPos;
-			if (onCameraChanged) onCameraChanged();
-			return;
+		auto newImgPos = camera.cnv2img(currentPos);
+		if (selectedTool == PEnums::CanvasTool::Pencil) {
+			float distance = 0;
+
+			newImgPos = newImgPos.roundToInt().toFloat();
+			if ((int)brushSize % 2 == 1) newImgPos.addXY(0.5f, 0.5f);
+
+			distance = currentStroke.getCurrentPosition().getDistanceFrom(newImgPos);
+
+			if (distance < 1.f) {
+				lastPos = currentPos;
+				if (onCameraChanged) onCameraChanged();
+				return;
+			}
+			currentStroke.lineTo(newImgPos);
+			repaintToCursor(currentPos);
+		} else if (selectedTool == PEnums::CanvasTool::Brush) {
+			currentStroke.lineTo(newImgPos);
+			repaintToCursor(currentPos);
 		}
-		currentStroke.lineTo(newImgPos);
-		break;
-	case PEnums::CanvasTool::Brush:
-		currentStroke.lineTo(newImgPos);
-		break;
+		else {
+			auto imgMidPos = (imgStartPos + newImgPos) / 2;
+			//auto line = juce::Line(imgStartPos, imgLastPos);
+			auto rect = juce::Rectangle(imgStartPos, newImgPos);
+			float arrowSize = std::max(5.f, brushSize);
+			float arrowStrokeSize = 0.5f;
+			float expand = (brushSize + 5) * camera.getZoom();
+			currentStroke.clear();
+			switch (selectedTool) {
+			case PEnums::CanvasTool::Pencil:
+			case PEnums::CanvasTool::Brush:
+				break;
+			case PEnums::CanvasTool::Line:
+				currentStroke.startNewSubPath(imgStartPos);
+				currentStroke.lineTo(newImgPos);
+				repaintLine(startPos, lastPos);
+				break;
+			case PEnums::CanvasTool::BiDirArrow:
+				currentStroke.addArrow(juce::Line(imgMidPos, imgStartPos), arrowStrokeSize, arrowSize, arrowSize);
+				currentStroke.addArrow(juce::Line(imgMidPos, newImgPos), arrowStrokeSize, arrowSize, arrowSize);
+				repaintLine(startPos, lastPos);
+				break;
+			case PEnums::CanvasTool::OneDirArrow:
+				currentStroke.addArrow(juce::Line(imgStartPos, newImgPos), arrowStrokeSize, arrowSize, arrowSize);
+				repaintLine(startPos, lastPos);
+				break;
+			case PEnums::CanvasTool::Rect:
+				currentStroke.addRectangle(rect);
+				repaint(juce::Rectangle(currentPos.withX(startPos.x), lastPos).expanded(expand).toNearestInt());
+				repaint(juce::Rectangle(lastPos, currentPos.withY(startPos.y)).expanded(expand).toNearestInt());
+				break;
+			case PEnums::CanvasTool::Ellipse:
+				currentStroke.addEllipse(rect);
+				repaintEllipseFromRect(juce::Rectangle(startPos, currentPos), expand);
+				repaintEllipseFromRect(juce::Rectangle(startPos, lastPos), expand);
+				//repaintEllipseFromRect(juce::Rectangle(startPos, lastPos), expand);
+				//repaint(juce::Rectangle(startPos, currentPos).expanded(expand).toNearestInt());
+				//repaint(juce::Rectangle(currentPos.withX(startPos.x), lastPos).expanded(expand).toNearestInt());
+				//repaint(juce::Rectangle(lastPos, currentPos.withY(startPos.y)).expanded(expand).toNearestInt());
+				break;
+			case PEnums::CanvasTool::Triangle:
+				currentStroke.addTriangle(
+					rect.getX(), rect.getBottom(),
+					rect.getCentreX(), rect.getY(),
+					rect.getRight(), rect.getBottom()
+				);
+				rect = { startPos, currentPos };
+				repaintLine({ rect.getX(), rect.getBottom() }, { rect.getCentreX(), rect.getY() });
+				repaintLine({ rect.getRight(), rect.getBottom() }, { rect.getCentreX(), rect.getY() });
+				repaint(juce::Rectangle<float>(
+					{ rect.getX(), rect.getBottom() }, { rect.getRight(), rect.getBottom() }
+				).expanded(expand).toNearestInt());
+				//repaint(juce::Rectangle(startPos, currentPos).expanded(expand).toNearestInt());
+				break;
+			}
+		}
+		
 	}
-
-	float dirtyR = std::max(brushSize * camera.getZoom() + 5.0f, 20.0f);
-	repaint(juce::Rectangle<float>(lastPos, currentPos)
-		.expanded(dirtyR).toNearestInt());
 	lastPos = currentPos;
 	if (onCameraChanged) onCameraChanged();
 }
 
-void CanvasComponent::mouseUp(const juce::MouseEvent&)
+
+void CanvasComponent::repaintLine(juce::Point<float> start,
+	juce::Point<float> end,
+	float maxSegmentLength)
 {
+	const float dx = end.getX() - start.getX();
+	const float dy = end.getY() - start.getY();
+	const float length = std::hypot(dx, dy);
+
+	const int numSegments = juce::jmax(1, static_cast<int>(length * 2 / maxSegmentLength));
+	const float nx = dx / length / 2;
+	const float ny = dy / length / 2;
+	const float segmentLen = length * 2 / numSegments;
+	const float pad = (brushSize + 5) * camera.getZoom();
+
+	for (int i = 0; i <= numSegments; ++i)
+	{
+		const float t = i * segmentLen;
+		const float x = start.getX() + nx * t;
+		const float y = start.getY() + ny * t;
+
+		repaint(juce::Rectangle<int>(
+			static_cast<int>(x - pad),
+			static_cast<int>(y - pad),
+			static_cast<int>(pad * 2 + 1),
+			static_cast<int>(pad * 2 + 1)
+		));
+	}
+}
+
+void CanvasComponent::repaintEllipseFromRect(const juce::Rectangle<float>& rect, float expand)
+{
+	constexpr float invSqrt2 = 0.7071067811865475f; // 1 / √2
+	constexpr float aaPadding = 2.0f;               
+
+	juce::Rectangle<float> outer = rect.expanded(expand);
+	juce::Rectangle<float> inner = rect.reduced(expand);
+
+	if (inner.getWidth() <= 100.0f || inner.getHeight() <= 100.0f)
+	{
+		repaint(outer.toNearestInt());
+		return;
+	}
+
+	float rx = inner.getWidth() * 0.5f;
+	float ry = inner.getHeight() * 0.5f;
+	juce::Point<float> center = inner.getCentre();
+
+	float skipHalfW = rx * invSqrt2;
+	float skipHalfH = ry * invSqrt2;
+
+	float skipLeft = center.x - skipHalfW;
+	float skipRight = center.x + skipHalfW;
+	float skipTop = center.y - skipHalfH;
+	float skipBottom = center.y + skipHalfH;
+
+	auto repaintPadded = [this, aaPadding](float x1, float y1, float x2, float y2)
+		{
+			repaint(
+				static_cast<int>(std::floor(x1 - aaPadding)),
+				static_cast<int>(std::floor(y1 - aaPadding)),
+				static_cast<int>(std::ceil(x2 - x1 + aaPadding * 2.0f + 1.0f)),
+				static_cast<int>(std::ceil(y2 - y1 + aaPadding * 2.0f + 1.0f))
+			);
+		};
+
+
+	const float expandQ = expand * 0.5f;
+	repaintPadded(outer.getX(), outer.getY(), outer.getRight(), skipTop);
+	repaintPadded(outer.getX(), skipTop, skipLeft + expandQ, skipBottom);
+	repaintPadded(skipRight - expandQ, skipTop, outer.getRight(), skipBottom);
+	repaintPadded(outer.getX(), skipBottom, outer.getRight(), outer.getBottom());
+
+	//repaintPadded(outer.getX(), skipTop, skipLeft, skipBottom);
+	//repaintPadded(skipRight, skipTop, outer.getRight(), skipBottom);
+	//repaintPadded(skipLeft, outer.getY(), skipRight, skipTop);
+	//repaintPadded(skipLeft, skipBottom, skipRight, outer.getBottom());
+
+	//const float expandH = expand * 2;
+	//const float expandT = expand * 4.f;
+	//repaint(skipLeft - expandH - expandQ, skipTop - expandH - expandQ, expandT, expandT);
+	//repaint(skipRight - expandH + expandQ, skipTop - expandH - expandQ, expandT, expandT);
+	//repaint(skipLeft - expandH - expandQ, skipBottom - expandH + expandQ, expandT, expandT);
+	//repaint(skipRight - expandH + expandQ, skipBottom - expandH + expandQ, expandT, expandT);
+}
+
+void CanvasComponent::mouseUp(const juce::MouseEvent& e)
+{
+	repaintUnderCursor(e.position);
 	if (isPanning)
 	{
 		isPanning = false;
+		needBrushDraw = true;
 		setMouseCursor(juce::MouseCursor::CrosshairCursor);
 		return;
 	}
@@ -281,18 +445,20 @@ void CanvasComponent::mouseUp(const juce::MouseEvent&)
 	{
 		drawCurrentPath(g);
 		auto bStroke = currentStroke.getBounds().expanded(expand);
-		repaint(juce::Rectangle<float>(camera.img2cnv(bStroke.getTopLeft()), camera.img2cnv(bStroke.getBottomRight())).toNearestInt());
 		currentStroke.clear();
-	}
+		repaint(juce::Rectangle<float>(camera.img2cnv(bStroke.getTopLeft()), camera.img2cnv(bStroke.getBottomRight())).toNearestInt());
+	} else if (selectedTool == PEnums::CanvasTool::Pencil || selectedTool == PEnums::CanvasTool::Brush)
+		drawSigleClick(g);
 	else
 	{
-		drawSigleClick(g);
+		drawCurrentPath(g);
+		repaint(juce::Rectangle<float>(imgStartPos, lastPos).expanded(brushSize + 5).toNearestInt());
 	}
 }
 
 juce::ApplicationCommandTarget* CanvasComponent::getNextCommandTarget()
 {
-	return nullptr;// findFirstTargetParentComponent();
+	return findFirstTargetParentComponent();
 }
 
 void CanvasComponent::getAllCommands(juce::Array<juce::CommandID>& c)

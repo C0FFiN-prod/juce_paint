@@ -7,9 +7,21 @@ ToolbarComponent::ToolbarComponent()
 	setOpaque(true);
 
 	separatorLine = std::make_unique<Separator>();
-	btnCursor.reset(addToolButton(ToolButtonComponent::Type::Single, PEnums::Icons::Cursor));
-	btnBrushSize.reset(addToolButton(ToolButtonComponent::Type::Single, PEnums::Icons::Size));
-	btnBrushSize->callback = [this]()
+	btnCursor = addToolButton(ToolButtonComponent::Type::Single, PEnums::Icons::Cursor);
+	btns.add(btnCursor);
+	btnCursor->data = PEnums::CanvasTool::Cursor;
+	btnCursor->callback = [this](ToolButtonComponent* btn)
+		{
+			if (btn->getState() == ToolButtonComponent::State::Disabled) return;
+			resetBtnsExcept(btn);
+			btn->setState(ToolButtonComponent::State::Active);
+			selectedTool = (PEnums::CanvasTool)btn->data;
+			if (onToolChanged) onToolChanged(selectedTool);
+		};
+
+	btnBrushSize = addToolButton(ToolButtonComponent::Type::Single, PEnums::Icons::Size);
+	btns.add(btnBrushSize);
+	btnBrushSize->callback = [this](ToolButtonComponent*)
 		{
 			BrushSizeComponent::show(getTopLevelComponent(), btnBrushSize->getBounds().toNearestInt(),
 				[this](float s)
@@ -17,33 +29,130 @@ ToolbarComponent::ToolbarComponent()
 					brushSize = s;
 					if (onBrushSizeChanged) onBrushSizeChanged(s); }, brushSize);
 		};
-	btnBrush.reset(addToolButton(ToolButtonComponent::Type::Multiple, PEnums::Icons::Brush));
+	btnBrush = addToolButton(ToolButtonComponent::Type::Multiple, PEnums::Icons::Brush);
+	btns.add(btnBrush);
 	btnBrush->data = PEnums::CanvasTool::Brush;
-	btnBrush->callback = [this]()
+	btnBrush->callback = [this](ToolButtonComponent* btn)
 		{
-			if (btnBrush->getState() == ToolButtonComponent::State::Disabled) return;
-			if (btnBrush->getState() == ToolButtonComponent::State::Active) {
-				if (btnBrush->data == PEnums::CanvasTool::Brush) {
-					btnBrush->setIcon(PEnums::Icons::Pencil);
-					btnBrush->data = PEnums::CanvasTool::Pencil;
+			if (btn->getState() == ToolButtonComponent::State::Disabled) return;
+			if (btn->getState() == ToolButtonComponent::State::Active) {
+				switch (btn->data) {
+				case PEnums::CanvasTool::Brush:
+					btn->setIcon(PEnums::Icons::Pencil);
+					btn->data = PEnums::CanvasTool::Pencil;
+					break;
+				case PEnums::CanvasTool::Pencil:
+					btn->setIcon(PEnums::Icons::Brush);
+					btn->data = PEnums::CanvasTool::Brush;
+					break;
 				}
-				else {
-					btnBrush->setIcon(PEnums::Icons::Brush);
-					btnBrush->data = PEnums::CanvasTool::Brush;
-				}
-				btnBrush->repaint();
+				btn->repaint();
 			}
 			else {
-				btnBrush->setState(ToolButtonComponent::State::Active);
+				resetBtnsExcept(btn);
+				btn->setState(ToolButtonComponent::State::Active);
 			}
-			selectedTool = (PEnums::CanvasTool)btnBrush->data;
-			if (onBrushSizeChanged) onToolChanged(selectedTool);
+			selectedTool = (PEnums::CanvasTool)btn->data;
+			if (onToolChanged) onToolChanged(selectedTool);
 		};
-	btnEraser.reset(addToolButton(ToolButtonComponent::Type::Single, PEnums::Icons::Erase));
-	btnFill.reset(addToolButton(ToolButtonComponent::Type::Single, PEnums::Icons::Fill));
-	btnShapes.reset(addToolButton(ToolButtonComponent::Type::Multiple, PEnums::Icons::Rect));
-	btnLines.reset(addToolButton(ToolButtonComponent::Type::Multiple, PEnums::Icons::Line));
-	btnText.reset(addToolButton(ToolButtonComponent::Type::Single, PEnums::Icons::Text));
+	
+	btnEraser = addToolButton(ToolButtonComponent::Type::Single, PEnums::Icons::Erase);
+	btns.add(btnEraser);
+	btnEraser->data = PEnums::CanvasTool::Eraser;
+	btnEraser->callback = [this](ToolButtonComponent* btn)
+		{
+			if (btn->getState() == ToolButtonComponent::State::Disabled) return;
+			resetBtnsExcept(btn);
+			btn->setState(ToolButtonComponent::State::Active);
+			selectedTool = (PEnums::CanvasTool)btn->data;
+			if (onToolChanged) onToolChanged(selectedTool);
+		};
+
+	btnFill = addToolButton(ToolButtonComponent::Type::Single, PEnums::Icons::Fill);
+	btns.add(btnFill);
+	btnFill->data = PEnums::CanvasTool::Fill;
+	btnFill->callback = [this](ToolButtonComponent* btn)
+		{
+			if (btn->getState() == ToolButtonComponent::State::Disabled) return;
+			resetBtnsExcept(btn);
+			btn->setState(ToolButtonComponent::State::Active);
+			selectedTool = (PEnums::CanvasTool)btn->data;
+			if (onToolChanged) onToolChanged(selectedTool);
+		};
+
+	btnShapes = addToolButton(ToolButtonComponent::Type::Multiple, PEnums::Icons::Rect);
+	btns.add(btnShapes);
+	btnShapes->data = PEnums::CanvasTool::Rect;
+	btnShapes->callback = [this](ToolButtonComponent* btn)
+		{
+			if (btn->getState() == ToolButtonComponent::State::Disabled) return;
+			if (btn->getState() == ToolButtonComponent::State::Active) {
+				switch (btn->data) {
+				case PEnums::CanvasTool::Rect:
+					btn->setIcon(PEnums::Icons::Ellipse);
+					btn->data = PEnums::CanvasTool::Ellipse;
+					break;
+				case PEnums::CanvasTool::Ellipse:
+					btn->setIcon(PEnums::Icons::Triangle);
+					btn->data = PEnums::CanvasTool::Triangle;
+					break;
+				case PEnums::CanvasTool::Triangle:
+					btn->setIcon(PEnums::Icons::Rect);
+					btn->data = PEnums::CanvasTool::Rect;
+					break;
+				}
+				btn->repaint();
+			}
+			else {
+				resetBtnsExcept(btn);
+				btn->setState(ToolButtonComponent::State::Active);
+			}
+			selectedTool = (PEnums::CanvasTool)btn->data;
+			if (onToolChanged) onToolChanged(selectedTool);
+		};
+	btnLines = addToolButton(ToolButtonComponent::Type::Multiple, PEnums::Icons::Line);
+	btns.add(btnLines);
+	btnLines->data = PEnums::CanvasTool::Line;
+	btnLines->callback = [this](ToolButtonComponent* btn)
+		{
+			if (btn->getState() == ToolButtonComponent::State::Disabled) return;
+			if (btn->getState() == ToolButtonComponent::State::Active) {
+				switch (btn->data) {
+				case PEnums::CanvasTool::Line:
+					btn->setIcon(PEnums::Icons::OneDirArrow);
+					btn->data = PEnums::CanvasTool::OneDirArrow;
+					break;
+				case PEnums::CanvasTool::OneDirArrow:
+					btn->setIcon(PEnums::Icons::BiDirArrow);
+					btn->data = PEnums::CanvasTool::BiDirArrow;
+					break;
+				case PEnums::CanvasTool::BiDirArrow:
+					btn->setIcon(PEnums::Icons::Line);
+					btn->data = PEnums::CanvasTool::Line;
+					break;
+				}
+				btn->repaint();
+			}
+			else {
+				resetBtnsExcept(btn);
+				btn->setState(ToolButtonComponent::State::Active);
+			}
+			selectedTool = (PEnums::CanvasTool)btn->data;
+			if (onToolChanged) onToolChanged(selectedTool);
+		};
+
+	btnText = addToolButton(ToolButtonComponent::Type::Single, PEnums::Icons::Text);
+	btns.add(btnText);
+	btnText->data = PEnums::CanvasTool::Text;
+	btnText->callback = [this](ToolButtonComponent* btn)
+		{
+			if (btn->getState() == ToolButtonComponent::State::Disabled) return;
+			resetBtnsExcept(btn);
+			btn->setState(ToolButtonComponent::State::Active);
+			selectedTool = (PEnums::CanvasTool)btn->data;
+			if (onToolChanged) onToolChanged(selectedTool);
+		};
+
 
 	btnBrush->setState(ToolButtonComponent::State::Active);
 
@@ -67,6 +176,8 @@ ToolbarComponent::ToolbarComponent()
 			if (onColorChanged) onColorChanged(c, true);
 		};
 
+	
+
 	//colorSelector->onSwapColors = [this]()
 	//{
 	//    std::swap(fgColor, bgColor);
@@ -84,6 +195,14 @@ ToolButtonComponent* ToolbarComponent::addToolButton(ToolButtonComponent::Type t
 	btn->setIcon(icon);
 	addAndMakeVisible(*btn);
 	return btn.release();
+}
+
+void ToolbarComponent::resetBtnsExcept(ToolButtonComponent* theBtn)
+{
+	for (auto* btn : btns) {
+		if (btn == theBtn) continue;
+		btn->setState(ToolButtonComponent::State::Default);
+	}
 }
 
 void ToolbarComponent::paint(juce::Graphics& g)
@@ -114,14 +233,16 @@ void ToolbarComponent::resized()
 			.withMargin(btnMargin));
 		};
 
-	addBtn(*btnCursor);
-	addBtn(*btnBrushSize);
-	addBtn(*btnBrush);
-	addBtn(*btnEraser);
-	addBtn(*btnFill);
-	addBtn(*btnShapes);
-	addBtn(*btnLines);
-	addBtn(*btnText);
+	for (auto* btn : btns)
+		addBtn(*btn);
+	//addBtn(*btnCursor);
+	//addBtn(*btnBrushSize);
+	//addBtn(*btnBrush);
+	//addBtn(*btnEraser);
+	//addBtn(*btnFill);
+	//addBtn(*btnShapes);
+	//addBtn(*btnLines);
+	//addBtn(*btnText);
 
 	fb.items.add(juce::FlexItem(*separatorLine)
 		.withWidth(buttonSize)

@@ -31,7 +31,7 @@ public:
     void mouseExit(const juce::MouseEvent &) override;
     void mouseDown(const juce::MouseEvent &) override;
     void mouseUp(const juce::MouseEvent &) override;
-    std::function<void()> callback;
+    std::function<void(ToolButtonComponent*)> callback;
     int data = 0;
 private:
     void drawIcon(juce::Graphics &g, juce::Colour col);

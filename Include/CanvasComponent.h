@@ -26,8 +26,6 @@ public:
     juce::Rectangle<int> getZoomedImageRect() const { return canvasImage.getBounds().withCentre(getLocalBounds().getCentre()) * camera.getZoom(); }
 
     void paint(juce::Graphics &g) override;
-    void drawSigleClick(juce::Graphics& g);
-    void drawCurrentPath(juce::Graphics& g);
     void resized() override;
     void mouseExit(const juce::MouseEvent &e) override;
     void mouseEnter(const juce::MouseEvent &e) override;
@@ -35,6 +33,8 @@ public:
     void startPanning(juce::Point<float> startPos);
     void mouseMove(const juce::MouseEvent &e) override;
     void mouseDrag(const juce::MouseEvent &e) override;
+    void repaintLine(juce::Point<float> start, juce::Point<float> end, float maxSegmentLength = 50.f);
+    void repaintEllipseFromRect(const juce::Rectangle<float>& rect, float expand);
     void mouseUp(const juce::MouseEvent &e) override;
     void mouseWheelMove(const juce::MouseEvent& e, const juce::MouseWheelDetails& wheel) override;
 
@@ -57,9 +57,13 @@ private:
     juce::ScrollBar verticalScroll{ true };
     void scrollbarPan(bool isHorizontal, bool isPositive);
 
+    void drawSigleClick(juce::Graphics& g);
+    void drawCurrentPath(juce::Graphics& g);
+    void repaintUnderCursor(juce::Point<float> pos);
+
+    void repaintToCursor(juce::Point<float> pos);
 
     bool isPanning{ false };
-    juce::Point<float> panStart;
 
     juce::Image canvasImage{juce::Image::PixelFormat::ARGB, 200, 200, true};
     juce::Rectangle<int> canvasImageBounds{canvasImage.getBounds().toNearestInt()};
@@ -68,7 +72,10 @@ private:
     juce::Colour bgColour{juce::Colours::white};
     float brushSize{2.0f};
 
+    bool needBrushDraw{false};
     bool isDrawing{false};
+    juce::Point<float> imgStartPos;
+    juce::Point<float> startPos;
     juce::Point<float> lastPos;
 
     juce::Path currentStroke;

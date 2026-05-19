@@ -26,16 +26,19 @@ private:
     juce::Colour bgColor;
     float brushSize = 2;
 
-    std::unique_ptr<ToolButtonComponent> btnCursor;
-    std::unique_ptr<ToolButtonComponent> btnBrushSize;
-    std::unique_ptr<ToolButtonComponent> btnBrush;
-    std::unique_ptr<ToolButtonComponent> btnEraser;
-    std::unique_ptr<ToolButtonComponent> btnFill;
-    std::unique_ptr<ToolButtonComponent> btnShapes;
-    std::unique_ptr<ToolButtonComponent> btnLines;
-    std::unique_ptr<ToolButtonComponent> btnText;
+    ToolButtonComponent* btnCursor;
+    ToolButtonComponent* btnBrushSize;
+    ToolButtonComponent* btnBrush;
+    ToolButtonComponent* btnEraser;
+    ToolButtonComponent* btnFill;
+    ToolButtonComponent* btnShapes;
+    ToolButtonComponent* btnLines;
+    ToolButtonComponent* btnText;
+    OwnedArray<ToolButtonComponent> btns;
+
 
     std::unique_ptr<Separator> separatorLine;
     std::unique_ptr<ColorSelectorComponent> colorSelector;
     ToolButtonComponent* addToolButton(ToolButtonComponent::Type type, const EmbeddedIcon& icon);
+    void resetBtnsExcept(ToolButtonComponent* btn);
 };

@@ -52,6 +52,7 @@ namespace PEnums {
 	};
 
 	namespace Icons {
+		const EmbeddedIcon Triangle = IconsData::Triangle;
 		const EmbeddedIcon BiDirArrow = IconsData::BiDirArrow;
 		const EmbeddedIcon Brush = IconsData::Brush;
 		const EmbeddedIcon Cursor = IconsData::Cursor;

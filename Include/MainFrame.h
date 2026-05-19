@@ -3,7 +3,7 @@
 #include "../JuceLibraryCode/JuceHeader.h"
 #include "../Include/MainComponent.h"
 #include "../Include/EditorMenuBar.h"
-#include "../Include/TransparentCallOutBoxLookAndFeel.h"
+#include "../Include/CustomLookAndFeel.h"
 //
 class MainFrame : public DocumentWindow
 {
@@ -22,7 +22,7 @@ public:
 	//
 private:
 	std::unique_ptr<EditorMenuBar> menuBarModel;
-	std::unique_ptr<TransparentCallOutBoxLookAndFeel> transparentLNF;
+	std::unique_ptr<CustomLookAndFeel> customLNF;
 
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MainFrame)
 };

@@ -9,8 +9,8 @@ MainFrame::MainFrame(const String& name)
 	setResizable(true, false);
 	setResizeLimits(400, 600, 10000, 10000);
 
-	transparentLNF = std::make_unique<TransparentCallOutBoxLookAndFeel>();
-	juce::LookAndFeel::setDefaultLookAndFeel(transparentLNF.get());
+	customLNF = std::make_unique<CustomLookAndFeel>();
+	juce::LookAndFeel::setDefaultLookAndFeel(customLNF.get());
 	auto* commandManager = PracticeApplication::getInstance()->getCommandManager();
 	commandManager->registerAllCommandsForTarget(JUCEApplication::getInstance());
 

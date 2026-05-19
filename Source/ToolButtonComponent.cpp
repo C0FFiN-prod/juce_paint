@@ -105,11 +105,11 @@ void ToolButtonComponent::mouseUp(const juce::MouseEvent &)
 	case State::Pressed:
 		setState(State::Default);
 		if (callback)
-			callback();
+			callback(this);
 		break;
 	case State::Active:
 		if (callback)
-			callback();
+			callback(this);
 		break;
 	}
 }
