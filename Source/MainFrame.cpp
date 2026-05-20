@@ -14,7 +14,7 @@ MainFrame::MainFrame(const String& name)
 	auto* commandManager = PracticeApplication::getInstance()->getCommandManager();
 	commandManager->registerAllCommandsForTarget(JUCEApplication::getInstance());
 
-	setContentOwned(new MainComponent(), false);
+	setContentOwned(new MainComponent(*this), false);
 	setVisible(true);
 
 	menuBarModel.reset(new EditorMenuBar());

@@ -16,7 +16,10 @@ public:
 		juce::LookAndFeel::setDefaultLookAndFeel(nullptr);
 	};
 	//
-	void closeButtonPressed(void) override { JUCEApplication::getInstance()->systemRequestedQuit(); }
+	void closeButtonPressed(void) override { 
+		if(getMainComponent().fileManager.handleWindowClose())
+			JUCEApplication::getInstance()->systemRequestedQuit();
+	}
 	//
 	MainComponent &getMainComponent(void) { return *dynamic_cast<MainComponent *>(getContentComponent()); }
 	//

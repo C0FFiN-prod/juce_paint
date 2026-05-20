@@ -23,6 +23,14 @@ public:
     void setZoom(float v) { camera.setZoom(v); updateScrollbars(); };
     juce::Range<float> getZoomRange() const { return camera.getZoomRange(); }
     juce::Image getCanvasImage() const { return canvasImage; }
+    juce::Image getImage() const { 
+        juce::Image newImg{ juce::Image::ARGB, canvasImage.getWidth(), canvasImage.getHeight(), false };
+        newImg.clear(canvasImage.getBounds(), bgColour);
+        juce::Graphics g(newImg);
+        g.drawImage(canvasImage, newImg.getBounds().toFloat(), juce::RectanglePlacement::stretchToFit);
+        return newImg;
+    }
+    void setCanvasImage(const juce::Image& img) { canvasImage = std::move(img); resized(); }
     juce::Rectangle<int> getImageRect() const { return canvasImage.getBounds(); }
     juce::Rectangle<int> getZoomedImageRect() const { return canvasImage.getBounds().withCentre(getLocalBounds().getCentre()) * camera.getZoom(); }
 
@@ -34,6 +42,7 @@ public:
     void startPanning(juce::Point<float> startPos);
     void mouseMove(const juce::MouseEvent &e) override;
     void mouseDrag(const juce::MouseEvent &e) override;
+    void redrawImageWithTransform(int w, int h, const juce::AffineTransform& t);
     void repaintLine(juce::Point<float> start, juce::Point<float> end, float expand, bool needBigStart = false, bool needBigEnd = false);
     void repaintEllipse(juce::Rectangle<float> rect, float expand);
     void mouseUp(const juce::MouseEvent &e) override;
@@ -53,8 +62,26 @@ public:
     static bool isColorMatch(juce::Colour c1, juce::Colour c2, juce::uint8 tolerance);
 
     std::function<void()> onCameraChanged;
+    std::function<void()> onImageChanged;
 
 private:
+
+    static const enum CanvasFlags {
+        Drawing     = 0x01,
+        Panning     = 0x02,
+        NeedBrush   = 0x04,
+        Dragging    = 0x08,
+        Selecting   = 0x10,
+    };
+
+    juce::uint32 flags = 0;
+
+    bool hasFlag(const juce::uint32 f) { return (bool)(flags & f); }
+    void setFlag(const juce::uint32 f, bool b = true) { 
+        if (b) flags |= f;
+        else flags &= ~f;
+    }
+
     PEnums::CanvasTool selectedTool = PEnums::CanvasTool::Brush;
     Camera camera;
 
@@ -69,17 +96,19 @@ private:
 
     void repaintToCursor(juce::Point<float> pos);
 
-    bool isPanning{ false };
-
     juce::Image canvasImage{juce::Image::PixelFormat::ARGB, 200, 200, true};
-    juce::Rectangle<int> canvasImageBounds{canvasImage.getBounds().toNearestInt()};
+    juce::Rectangle<float> canvasImageRect{0,0,0,0};
+    juce::Rectangle<int> selection{0,0,0,0};
+
+    void resizeImageRect() {
+        auto bImg = canvasImage.getBounds().toFloat();
+        canvasImageRect = juce::Rectangle<float>(camera.img2cnv(bImg.getTopLeft()), camera.img2cnv(bImg.getBottomRight()));
+    }
 
     juce::Colour currentColour{juce::Colours::black};
     juce::Colour bgColour{juce::Colours::white};
     float brushSize{2.0f};
 
-    bool needBrushDraw{false};
-    bool isDrawing{false};
     juce::Point<float> imgStartPos;
     juce::Point<float> imgLastPos;
     juce::Point<float> startPos;

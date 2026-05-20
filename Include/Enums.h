@@ -48,7 +48,14 @@ namespace PEnums {
 		CanvasResize = 30001,
 		CanvasFlipH,
 		CanvasFlipV,
+		CanvasRotate90CW,
+		CanvasRotate90CC,
 		CanvasClear,
+		FileNew,
+		FileOpen,
+		FileSave,
+		FileSaveAs,
+		AppQuit,
 	};
 
 	namespace Icons {

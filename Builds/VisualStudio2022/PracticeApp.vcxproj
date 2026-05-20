@@ -2690,6 +2690,7 @@
     <ClCompile Include="..\..\Source\ColorPickerPopup.cpp" />
     <ClCompile Include="..\..\Source\ColorSelectorComponent.cpp" />
     <ClCompile Include="..\..\Source\EditorMenuBar.cpp" />
+    <ClCompile Include="..\..\Source\FileManager.cpp" />
     <ClCompile Include="..\..\Source\Geometry.cpp" />
     <ClCompile Include="..\..\Source\MainComponent.cpp" />
     <ClCompile Include="..\..\Source\MainFrame.cpp" />
@@ -3757,6 +3758,7 @@
     <ClInclude Include="..\..\Include\ColorSelectorComponent.h" />
     <ClInclude Include="..\..\Include\EditorMenuBar.h" />
     <ClInclude Include="..\..\Include\Enums.h" />
+    <ClInclude Include="..\..\Include\FileManager.h" />
     <ClInclude Include="..\..\Include\Geometry.h" />
     <ClInclude Include="..\..\Include\MainComponent.h" />
     <ClInclude Include="..\..\Include\MainFrame.h" />

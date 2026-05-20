@@ -4,13 +4,13 @@
 #include "../Include/ToolbarComponent.h"
 #include "../Include/CanvasComponent.h"
 #include "../Include/StatusBarComponent.h"
+#include "../Include/FileManager.h"
 
 //
 class MainComponent : public Component, public juce::ApplicationCommandTarget
 {
 public:
-	static const juce::CommandID cmdQuit = 1002;
-	MainComponent(void);
+	MainComponent(juce::DocumentWindow& w);
 	~MainComponent(void) override;
 	//
 	void paint(Graphics &) override;
@@ -20,6 +20,7 @@ public:
 	void getAllCommands(juce::Array<juce::CommandID>& c) override;
 	void getCommandInfo(juce::CommandID commandID, juce::ApplicationCommandInfo& result) override;
 	bool perform(const juce::ApplicationCommandTarget::InvocationInfo& info) override;
+	FileManager fileManager;
 	//
 private:
 	ToolbarComponent toolbar{};

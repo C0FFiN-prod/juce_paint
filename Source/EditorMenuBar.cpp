@@ -13,13 +13,13 @@ juce::PopupMenu EditorMenuBar::getMenuForIndex(int topLevelIndex, const juce::St
 	switch (topLevelIndex)
 	{
 	case 0:
-		menu.addItem(1, _(Новый));
-		menu.addItem(2, _(Открыть...));
+		menu.addCommandItem(PracticeApplication::getInstance()->getCommandManager(), PEnums::CommandIDs::FileNew);
+		menu.addCommandItem(PracticeApplication::getInstance()->getCommandManager(), PEnums::CommandIDs::FileOpen);
 		menu.addSeparator();
-		menu.addItem(3, _(Сохранить));
-		menu.addItem(4, _(Сохранить как...));
+		menu.addCommandItem(PracticeApplication::getInstance()->getCommandManager(), PEnums::CommandIDs::FileSave);
+		menu.addCommandItem(PracticeApplication::getInstance()->getCommandManager(), PEnums::CommandIDs::FileSaveAs);
 		menu.addSeparator();
-		menu.addCommandItem(PracticeApplication::getInstance()->getCommandManager(), MainComponent::cmdQuit);
+		menu.addCommandItem(PracticeApplication::getInstance()->getCommandManager(), PEnums::CommandIDs::AppQuit);
 		break;
 	case 1:
 		menu.addItem(10, _(Отменить));
@@ -31,10 +31,12 @@ juce::PopupMenu EditorMenuBar::getMenuForIndex(int topLevelIndex, const juce::St
 		break;
 	case 2:
 		menu.addCommandItem(PracticeApplication::getInstance()->getCommandManager(), PEnums::CommandIDs::CanvasResize);
-		menu.addItem(21, _(Масштаб...));
 		menu.addSeparator();
-		menu.addItem(22, _(Отразить горизонтально));
-		menu.addItem(23, _(Отразить вертикально));
+		menu.addCommandItem(PracticeApplication::getInstance()->getCommandManager(), PEnums::CommandIDs::CanvasFlipH);
+		menu.addCommandItem(PracticeApplication::getInstance()->getCommandManager(), PEnums::CommandIDs::CanvasFlipV);
+		menu.addSeparator();
+		menu.addCommandItem(PracticeApplication::getInstance()->getCommandManager(), PEnums::CommandIDs::CanvasRotate90CW);
+		menu.addCommandItem(PracticeApplication::getInstance()->getCommandManager(), PEnums::CommandIDs::CanvasRotate90CC);
 		menu.addSeparator();
 		menu.addCommandItem(PracticeApplication::getInstance()->getCommandManager(), PEnums::CommandIDs::CanvasClear);
 		break;
