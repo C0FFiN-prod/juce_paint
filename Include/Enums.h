@@ -45,7 +45,7 @@ namespace PEnums {
 	};
 
 	static const enum CommandIDs {
-		CanvasResize = 1001,
+		CanvasResize = 30001,
 		CanvasFlipH,
 		CanvasFlipV,
 		CanvasClear,

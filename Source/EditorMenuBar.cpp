@@ -19,7 +19,6 @@ juce::PopupMenu EditorMenuBar::getMenuForIndex(int topLevelIndex, const juce::St
 		menu.addItem(3, _(Сохранить));
 		menu.addItem(4, _(Сохранить как...));
 		menu.addSeparator();
-		//menu.addItem(5, _(Выход));
 		menu.addCommandItem(PracticeApplication::getInstance()->getCommandManager(), MainComponent::cmdQuit);
 		break;
 	case 1:
@@ -36,6 +35,8 @@ juce::PopupMenu EditorMenuBar::getMenuForIndex(int topLevelIndex, const juce::St
 		menu.addSeparator();
 		menu.addItem(22, _(Отразить горизонтально));
 		menu.addItem(23, _(Отразить вертикально));
+		menu.addSeparator();
+		menu.addCommandItem(PracticeApplication::getInstance()->getCommandManager(), PEnums::CommandIDs::CanvasClear);
 		break;
 	default:
 		throw "Unknown MenuBar Menu Index";

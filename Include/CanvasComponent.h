@@ -10,8 +10,9 @@ public:
     ~CanvasComponent() override = default;
 
     void setCurrentColour(juce::Colour col) { currentColour = col; }
-    void setBgColour(juce::Colour col) { bgColour = col; repaint(); }
-    void setTool(PEnums::CanvasTool tool) { selectedTool = tool; }
+    void setBgColour(juce::Colour col);
+    void setTool(PEnums::CanvasTool tool);
+    void resetBrushDraw();
     void setBrushSize(float size) { brushSize = size; }
 
     void clearCanvas();
@@ -33,8 +34,8 @@ public:
     void startPanning(juce::Point<float> startPos);
     void mouseMove(const juce::MouseEvent &e) override;
     void mouseDrag(const juce::MouseEvent &e) override;
-    void repaintLine(juce::Point<float> start, juce::Point<float> end, float maxSegmentLength = 50.f);
-    void repaintEllipseFromRect(const juce::Rectangle<float>& rect, float expand);
+    void repaintLine(juce::Point<float> start, juce::Point<float> end, float expand, bool needBigStart = false, bool needBigEnd = false);
+    void repaintEllipse(juce::Rectangle<float> rect, float expand);
     void mouseUp(const juce::MouseEvent &e) override;
     void mouseWheelMove(const juce::MouseEvent& e, const juce::MouseWheelDetails& wheel) override;
 
@@ -46,6 +47,10 @@ public:
     void scrollBarMoved(juce::ScrollBar* scrollBar, double newStart) override;
     void updateScrollbars();
     void updateScrollBarLayout();
+
+    void floodFill(juce::Point<int> p, juce::uint8 tolerance = 0);
+
+    static bool isColorMatch(juce::Colour c1, juce::Colour c2, juce::uint8 tolerance);
 
     std::function<void()> onCameraChanged;
 
@@ -59,6 +64,7 @@ private:
 
     void drawSigleClick(juce::Graphics& g);
     void drawCurrentPath(juce::Graphics& g);
+    void eraseLine(const juce::Point<float>& to);
     void repaintUnderCursor(juce::Point<float> pos);
 
     void repaintToCursor(juce::Point<float> pos);
@@ -75,6 +81,7 @@ private:
     bool needBrushDraw{false};
     bool isDrawing{false};
     juce::Point<float> imgStartPos;
+    juce::Point<float> imgLastPos;
     juce::Point<float> startPos;
     juce::Point<float> lastPos;
 
