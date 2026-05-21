@@ -20,7 +20,15 @@ public:
     juce::Point<float> getCursorImgPos() const { return camera.cnv2img(lastPos); };
     bool isCursorOverImg() const { return canvasImage.getBounds().contains(camera.cnv2img(lastPos).toInt()); };
     float getZoom() const { return camera.getZoom(); };
-    void setZoom(float v) { camera.setZoom(v); updateScrollbars(); };
+    void setZoom(float v) {
+        auto oldRect = canvasImageRect;
+        auto oldZ = camera.getZoom();
+        camera.setZoom(v); 
+        resizeImageRect();
+        updateScrollbars();
+        if (oldZ > v) repaint(oldRect.expanded(50).toNearestInt());
+        else repaint(canvasImageRect.expanded(50).toNearestInt());
+    };
     juce::Range<float> getZoomRange() const { return camera.getZoomRange(); }
     juce::Image getCanvasImage() const { return canvasImage; }
     juce::Image getImage() const { 

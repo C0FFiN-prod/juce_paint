@@ -9,6 +9,7 @@ ToolbarComponent::ToolbarComponent()
 	separatorLine = std::make_unique<Separator>();
 	btnCursor = addToolButton(ToolButtonComponent::Type::Single, PEnums::Icons::Cursor);
 	btns.add(btnCursor);
+	btnCursor->setState(ToolButtonComponent::State::Disabled);
 	btnCursor->data = PEnums::CanvasTool::Cursor;
 	btnCursor->callback = [this](ToolButtonComponent* btn)
 		{
@@ -143,6 +144,7 @@ ToolbarComponent::ToolbarComponent()
 
 	btnText = addToolButton(ToolButtonComponent::Type::Single, PEnums::Icons::Text);
 	btns.add(btnText);
+	btnText->setState(ToolButtonComponent::State::Disabled);
 	btnText->data = PEnums::CanvasTool::Text;
 	btnText->callback = [this](ToolButtonComponent* btn)
 		{
@@ -152,7 +154,7 @@ ToolbarComponent::ToolbarComponent()
 			selectedTool = (PEnums::CanvasTool)btn->data;
 			if (onToolChanged) onToolChanged(selectedTool);
 		};
-
+	
 
 	btnBrush->setState(ToolButtonComponent::State::Active);
 
@@ -200,7 +202,7 @@ ToolButtonComponent* ToolbarComponent::addToolButton(ToolButtonComponent::Type t
 void ToolbarComponent::resetBtnsExcept(ToolButtonComponent* theBtn)
 {
 	for (auto* btn : btns) {
-		if (btn == theBtn) continue;
+		if (btn == theBtn || btn->getState() == ToolButtonComponent::State::Disabled) continue;
 		btn->setState(ToolButtonComponent::State::Default);
 	}
 }
@@ -235,14 +237,6 @@ void ToolbarComponent::resized()
 
 	for (auto* btn : btns)
 		addBtn(*btn);
-	//addBtn(*btnCursor);
-	//addBtn(*btnBrushSize);
-	//addBtn(*btnBrush);
-	//addBtn(*btnEraser);
-	//addBtn(*btnFill);
-	//addBtn(*btnShapes);
-	//addBtn(*btnLines);
-	//addBtn(*btnText);
 
 	fb.items.add(juce::FlexItem(*separatorLine)
 		.withWidth(buttonSize)

@@ -1,16 +1,14 @@
 ﻿#include "../Include/CanvasSizeComponent.h"
 #include "../Include/MonospaceFontTextButtonLookAndFeel.h"
-
-#define _(x) juce::String::fromUTF8(u8#x)
+#include "../Include/Enums.h"
 
 inline CanvasSizeComponent::CanvasSizeComponent(int w, int h, std::function<void(int newW, int newH, int offsetX, int offsetY)> onApply) : currentW(w), currentH(h)
 {
 	setWantsKeyboardFocus(true);
 
-	titleLabel.setText(_(Размер холста), juce::dontSendNotification);
+	titleLabel.setText(_("Размер холста"), juce::dontSendNotification);
 	titleLabel.setJustificationType(juce::Justification::centred);
 	titleLabel.setFont(juce::Font().withHeight(14.0f).withStyle(juce::Font::bold));
-	titleLabel.setColour(juce::Label::ColourIds::textColourId, juce::Colour(0xFF191919));
 	
 	addAndMakeVisible(titleLabel);
 
@@ -23,10 +21,6 @@ inline CanvasSizeComponent::CanvasSizeComponent(int w, int h, std::function<void
 	widthInput.setIndents(2, 1);
 	widthInput.setFont(juce::Font(14.0f));
 	widthInput.setJustification(juce::Justification::centredRight);
-	widthInput.setColour(juce::TextEditor::backgroundColourId, juce::Colours::white);
-	widthInput.setColour(juce::TextEditor::outlineColourId, juce::Colour(0xFFE5E5E5));
-	widthInput.setColour(juce::TextEditor::focusedOutlineColourId, juce::Colour(0xFFBEBEBE));
-	widthInput.setColour(juce::TextEditor::textColourId, juce::Colours::black);
 	widthInput.setInputRestrictions(0, "0123456789");
 	widthInput.setText(juce::String(currentW));
 
@@ -40,15 +34,10 @@ inline CanvasSizeComponent::CanvasSizeComponent(int w, int h, std::function<void
 	heightInput.setIndents(2, 2);
 	heightInput.setFont(juce::Font(14.0f));
 	heightInput.setJustification(juce::Justification::centredRight);
-	heightInput.setColour(juce::TextEditor::backgroundColourId, juce::Colours::white);
-	heightInput.setColour(juce::TextEditor::outlineColourId, juce::Colour(0xFFE5E5E5));
-	heightInput.setColour(juce::TextEditor::focusedOutlineColourId, juce::Colour(0xFFBEBEBE));
-	heightInput.setColour(juce::TextEditor::textColourId, juce::Colours::black);
 	heightInput.setInputRestrictions(0, "0123456789");
 	heightInput.setText(juce::String(currentH));
 
-	xLabel.setText(_(×), juce::dontSendNotification);
-	xLabel.setColour(juce::Label::ColourIds::textColourId, juce::Colour(0xFF191919));
+	xLabel.setText(_("×"), juce::dontSendNotification);
 	xLabel.setJustificationType(juce::Justification::centred);
 	xLabel.setFont(juce::Font().withHeight(14.0f));
 
@@ -58,17 +47,16 @@ inline CanvasSizeComponent::CanvasSizeComponent(int w, int h, std::function<void
 
 	static MonospaceFontTextButtonLookAndFeel msFont;
 
-	const auto boxChars = _(┌┬┐├┼┤└┴┘);
+	const auto boxChars = _("┌┬┐├┼┤└┴┘");
 
 	for (int i = 0; i < 9; ++i)
 	{
 		anchorBtns.add(new juce::TextButton());
 		anchorBtns[i]->setLookAndFeel(&msFont);
 		anchorBtns[i]->setButtonText(juce::String::charToString(boxChars[i]));
-		anchorBtns[i]->setColour(juce::TextButton::buttonColourId, juce::Colours::white);
-		anchorBtns[i]->setColour(juce::TextButton::buttonOnColourId, juce::Colours::white);
-		anchorBtns[i]->setColour(juce::TextButton::ColourIds::textColourOffId, juce::Colour(0xFF191919));
-		anchorBtns[i]->setColour(juce::TextButton::ColourIds::textColourOnId, juce::Colour(0xFF8821f7));
+		anchorBtns[i]->setColour(juce::TextButton::ColourIds::textColourOnId, PEnums::Colours::Violet);
+		//anchorBtns[i]->setColour(juce::TextButton::ColourIds::buttonOnColourId, PEnums::Colours::White);
+		//anchorBtns[i]->setColour(juce::TextButton::ColourIds::buttonColourId, PEnums::Colours::White);
 		anchorBtns[i]->setToggleState(i == 4, juce::dontSendNotification);
 		anchorBtns[i]->setClickingTogglesState(true);
 		anchorBtns[i]->onClick = [this, i]()
@@ -79,17 +67,12 @@ inline CanvasSizeComponent::CanvasSizeComponent(int w, int h, std::function<void
 		addAndMakeVisible(anchorBtns[i]);
 	}
 
-	applyBtn.setButtonText(_(Применить));
-	applyBtn.setColour(juce::TextButton::buttonColourId, juce::Colour(0xFFFFBB00));
-	applyBtn.setColour(juce::TextButton::textColourOnId, juce::Colours::white);
-	applyBtn.setColour(juce::TextButton::ColourIds::textColourOffId, juce::Colour(0xFF191919));
-	applyBtn.setColour(juce::TextButton::ColourIds::textColourOnId, juce::Colour(0xFF191919));
+	applyBtn.setButtonText(_("Применить"));
+	applyBtn.setColour(juce::TextButton::buttonColourId, PEnums::Colours::Yellow);
+	applyBtn.setColour(juce::TextButton::textColourOnId, PEnums::Colours::White);
 
-	cancelBtn.setButtonText(_(Отменить));
-	cancelBtn.setColour(juce::TextButton::buttonColourId, juce::Colour(0xFFFFFFFF));
-	cancelBtn.setColour(juce::TextButton::buttonOnColourId, juce::Colour(0xFFD1D1D1));
-	cancelBtn.setColour(juce::TextButton::ColourIds::textColourOffId, juce::Colour(0xFF191919));
-	cancelBtn.setColour(juce::TextButton::ColourIds::textColourOnId, juce::Colour(0xFF191919));
+	cancelBtn.setButtonText(_("Отменить"));
+	cancelBtn.setColour(juce::TextButton::buttonOnColourId, PEnums::Colours::Gray3);
 
 	applyBtn.onClick = [this, onApply]()
 	{ applyResize(onApply, currentW, currentH); };

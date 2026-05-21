@@ -1,7 +1,5 @@
 ﻿#include "../Include/FileManager.h"
 
-#define _(x) juce::String::fromUTF8(u8#x)
-
 FileManager::FileManager(juce::Component& windowToRename,
 	juce::String programName,
 	LoadImageCallback onLoad,
@@ -17,7 +15,7 @@ FileManager::FileManager(juce::Component& windowToRename,
 
 void FileManager::updateWindowTitle()
 {
-	juce::String fileName = (!currentFile.exists()) ? _(Без названия) : currentFile.getFileName();
+	juce::String fileName = (!currentFile.exists()) ? _("Без названия") : currentFile.getFileName();
 	juce::String title = juce::String(isModified ? "*" : "") + fileName + " - " + programName;
 
 	window.setName(title);
@@ -28,36 +26,38 @@ void FileManager::showSavePrompt(std::function<void(bool)> onDecision)
 	jassert(juce::MessageManager::getInstance()->isThisTheMessageThread());
 
 	juce::String fileName = (!currentFile.exists()) ? _("Без названия") : currentFile.getFileName();
-	juce::String msg = _(Хотите сохранить работу?\nЕсть несохраненные изменения в ) + fileName + ".";
+	juce::String msg = _("Хотите сохранить работу?\nЕсть несохраненные изменения в\n\"") + fileName + "\".";
 	juce::AlertWindow::showYesNoCancelBox(
-		juce::AlertWindow::QuestionIcon, _(Сохранение), msg,
-		_(Сохранить),
-		_(Не сохранять),
-		_(Отмена), 
+		juce::AlertWindow::QuestionIcon, _("Сохранение"), msg,
+		_("Сохранить"),
+		_("Не сохранять"),
+		_("Отмена"),
 		nullptr,
 		juce::ModalCallbackFunction::create(
-		[this, onDecision](int result)
-		{
-			if (result == 1) // Сохранить
+			[this, onDecision](int result)
 			{
-				if (!currentFile.exists()) 
-					saveAsFile([onDecision]() { onDecision(true); });
-				else if (performSave(currentFile)) 
+				if (result == 1) // Сохранить
+				{
+					if (!currentFile.exists())
+						saveAsFile([onDecision]() { onDecision(true); });
+					else if (performSave(currentFile))
+						onDecision(true);
+				}
+				else if (result == 2) // Не сохранять
+				{
 					onDecision(true);
-			}
-			else if (result == 2) // Не сохранять
-			{
-				onDecision(true);
-			}
-			else // Отмена
-			{
-				onDecision(false);
-			}
-		}));
+				}
+				else // Отмена
+				{
+					onDecision(false);
+				}
+			}));
 }
 
-bool FileManager::performSave(const juce::File& file)
+bool FileManager::performSave(const juce::File& file, const PEnums::Formats targetFormat)
 {
+	if (targetFormat == PEnums::Formats::Unknown) return false;
+
 	if (!getImageCallback) return false;
 	juce::Image img = getImageCallback();
 	if (!img.isValid()) return false;
@@ -67,8 +67,18 @@ bool FileManager::performSave(const juce::File& file)
 
 	out.setPosition(0);
 	out.truncate();
-	juce::PNGImageFormat format;
-	bool result = format.writeImageToStream(img, out);
+
+	std::unique_ptr<juce::ImageFileFormat> format;
+	switch (targetFormat) {
+	case PEnums::Formats::PNG:
+		format.reset(new juce::PNGImageFormat());
+		break;
+	case PEnums::Formats::JPEG:
+		format.reset(new juce::JPEGImageFormat());
+		(static_cast<juce::JPEGImageFormat*>(format.get()))->setQuality(0.9);
+		break;
+	}
+	bool result = format->writeImageToStream(img, out);
 	if (result) out.flush();
 	return result;
 }
@@ -110,14 +120,15 @@ void FileManager::openFile()
 
 void FileManager::promptForOpen()
 {
-	chooser.reset(new juce::FileChooser(_(Открыть файл),
+	chooser.reset(new juce::FileChooser(_("Открыть файл"),
 		juce::File::getSpecialLocation(juce::File::userDocumentsDirectory),
-		"*.png;*.jpg;*.jpeg;*.bmp;*.gif", true));
+		"*.png;*.jpg;*.jpeg", true));
 	auto folderChooserFlags = FileBrowserComponent::canSelectFiles | FileBrowserComponent::openMode;
 
 	chooser->launchAsync(folderChooserFlags, [this](const FileChooser& c)
 		{
 			juce::File file(c.getResult());
+			if (file == juce::File()) return;
 			juce::FileInputStream stream(file);
 			if (stream.openedOk())
 			{
@@ -130,7 +141,7 @@ void FileManager::promptForOpen()
 				}
 				else
 				{
-					juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::WarningIcon, _(Ошибка), _(Не удалось открыть изображение.));
+					juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::WarningIcon, _("Ошибка"), _("Не удалось открыть изображение."));
 				}
 			}
 		});
@@ -140,23 +151,39 @@ void FileManager::saveFile(std::function<void()> onSave)
 {
 	if (!currentFile.exists() || !currentFile.existsAsFile())
 		saveAsFile(onSave);
-	else if (performSave(currentFile) && onSave) onSave();
+	else if (performSave(currentFile, extensionToFormat(currentFile)) && onSave) onSave();
+}
+
+PEnums::Formats FileManager::extensionToFormat(const juce::File& file) {
+	PEnums::Formats targetFormat;
+	juce::String extension = file.getFileExtension().toLowerCase();
+	if (extension == ".png")
+		targetFormat = PEnums::Formats::PNG;
+	else if (extension == ".jpg" || extension == ".jpeg")
+		targetFormat = PEnums::Formats::JPEG;
+	else
+		targetFormat = PEnums::Formats::Unknown;
+	return targetFormat;
 }
 
 void FileManager::saveAsFile(std::function<void()> onSave)
 {
-	chooser.reset(new juce::FileChooser(_(Сохранить как...),
+	chooser.reset(new juce::FileChooser(_("Сохранить как..."),
 		!currentFile.exists() ?
 		juce::File::getSpecialLocation(juce::File::userDocumentsDirectory) : currentFile.getParentDirectory(),
-		"*.png", true));
+		"*.png;*.jpg;*.jpeg", true));
 	auto folderChooserFlags = FileBrowserComponent::canSelectFiles | FileBrowserComponent::saveMode | FileBrowserComponent::warnAboutOverwriting;
-	
+
 	chooser->launchAsync(folderChooserFlags, [this, onSave](const FileChooser& c)
 		{
 			juce::File file(c.getResult());
-			if (!file.hasFileExtension(".png")) file = file.withFileExtension(".png");
+			if (file == juce::File()) return;
+			auto targetFormat = extensionToFormat(file);
 
-			if (performSave(file))
+			if (targetFormat == PEnums::Formats::Unknown)
+				juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::WarningIcon, _("Ошибка"), _("Неподдерживаемый формат файла") + " " + file.getFileExtension());
+			
+			if (performSave(file, targetFormat))
 			{
 				currentFile = file;
 				markAsChanged(false);
@@ -164,7 +191,7 @@ void FileManager::saveAsFile(std::function<void()> onSave)
 			}
 			else
 			{
-				juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::WarningIcon, _(Ошибка), _(Не удалось сохранить файл.));
+				juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::WarningIcon, _("Ошибка"), _("Не удалось сохранить файл."));
 			}
 		});
 }

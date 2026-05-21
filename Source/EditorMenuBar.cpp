@@ -3,9 +3,17 @@
 #include "../Include/MainFrame.h"
 #include "../Include/Application.h"
 
-#define _(x) juce::String::fromUTF8(u8#x)
-
 EditorMenuBar::EditorMenuBar() {}
+
+inline juce::StringArray EditorMenuBar::getMenuBarNames()
+{
+	
+	return {
+		_("Файл"),
+		_("Правка"),
+		_("Изображение"),
+	};
+}
 
 juce::PopupMenu EditorMenuBar::getMenuForIndex(int topLevelIndex, const juce::String&)
 {
@@ -22,12 +30,12 @@ juce::PopupMenu EditorMenuBar::getMenuForIndex(int topLevelIndex, const juce::St
 		menu.addCommandItem(PracticeApplication::getInstance()->getCommandManager(), PEnums::CommandIDs::AppQuit);
 		break;
 	case 1:
-		menu.addItem(10, _(Отменить));
-		menu.addItem(11, _(Повторить));
+		menu.addItem(10, _("Отменить"),false);
+		menu.addItem(11, _("Повторить"), false);
 		menu.addSeparator();
-		menu.addItem(12, _(Вырезать));
-		menu.addItem(13, _(Копировать));
-		menu.addItem(14, _(Вставить));
+		menu.addItem(12, _("Вырезать"), false);
+		menu.addItem(13, _("Копировать"), false);
+		menu.addItem(14, _("Вставить"), false);
 		break;
 	case 2:
 		menu.addCommandItem(PracticeApplication::getInstance()->getCommandManager(), PEnums::CommandIDs::CanvasResize);

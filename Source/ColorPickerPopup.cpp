@@ -1,5 +1,6 @@
 ﻿#include "../JuceLibraryCode/JuceHeader.h"
 #include "../Include/ColorPickerPopup.h"
+#include "../Include/Enums.h"
 
 char ColorPickerPopup::currentSwatch = 0;
 bool ColorPickerPopup::isFirstRun = true;
@@ -8,27 +9,22 @@ juce::Colour ColorPickerPopup::swatches[32];
 ColorPickerPopup::ColorPickerPopup(juce::Colour initial, std::function<void(juce::Colour)> onPick)
 	: callback(std::move(onPick))
 {
-	// Настройка hex-инпута
 	hexEditor.setMultiLine(false);
 	hexEditor.setReturnKeyStartsNewLine(false);
 	hexEditor.setReadOnly(false);
 	hexEditor.setScrollbarsShown(false);
 	hexEditor.setCaretVisible(true);
-	// hexEditor.setPopupCorrectionEnabled(false);
 	hexEditor.setIndents(2, 1);
 	hexEditor.setFont(juce::Font(10.0f));
 	hexEditor.setJustification(juce::Justification::centredLeft);
-	hexEditor.setColour(juce::TextEditor::backgroundColourId, juce::Colours::white);
-	hexEditor.setColour(juce::TextEditor::outlineColourId, juce::Colour(0xFFE5E5E5));
-	hexEditor.setColour(juce::TextEditor::focusedOutlineColourId, juce::Colour(0xFFBEBEBE));
-	hexEditor.setColour(juce::TextEditor::textColourId, juce::Colours::black);
 	hexEditor.addListener(this);
 	addAndMakeVisible(hexEditor);
 
+	setWantsKeyboardFocus(true);
+	//setMouseClickGrabsKeyboardFocus(true);
+
 	if (isFirstRun)
 		initSwatches();
-
-	setPaintingIsUnclipped(true);
 
 	colourChanged(initial, ColorSource::None);
 	setSize(185, 350);
@@ -41,19 +37,14 @@ ColorPickerPopup::~ColorPickerPopup()
 
 void ColorPickerPopup::paint(juce::Graphics &g)
 {
-	// 3. Квадрат выбора цвета
 	paintColourSquare(g);
 
-	// 4. HUE слайдер
 	paintHueSlider(g);
 
-	// 5. Alpha слайдер
 	paintAlphaSlider(g);
 
-	// 6. Пипетка + Hex
 	paintEyedropper(g);
 
-	// 7. Палетка сватчей
 	paintSwatchGrid(g);
 }
 
@@ -77,6 +68,14 @@ void ColorPickerPopup::resized()
 	r.removeFromTop(10);
 	swatchBounds = r.toFloat();
 }
+void ColorPickerPopup::mouseMove(const juce::MouseEvent& e)
+{
+	if (eyeHovered != eyeBounds.contains(e.position)) {
+		eyeHovered = eyeBounds.contains(e.position);
+		repaint(eyeBounds.toNearestInt());
+	}
+}
+
 
 void ColorPickerPopup::mouseDown(const juce::MouseEvent &e)
 {
@@ -95,7 +94,11 @@ void ColorPickerPopup::mouseDown(const juce::MouseEvent &e)
 		draggingAlpha = true;
 		updateFromAlpha(e.position.toInt());
 	}
-	// else if (eyeBounds.contains(e.position)) // do nothing, won't be implemented :(
+	else if (eyeBounds.contains(e.position)) 
+	{
+		eyePressed = true;
+		repaint(eyeBounds.toNearestInt());
+	}
 	else if (swatchBounds.contains(e.position))
 	{
 		updateFromSwatch(e.position.toInt());
@@ -112,9 +115,15 @@ void ColorPickerPopup::mouseDrag(const juce::MouseEvent &e)
 		updateFromAlpha(e.position.toInt());
 }
 
-void ColorPickerPopup::mouseUp(const juce::MouseEvent &)
+void ColorPickerPopup::mouseUp(const juce::MouseEvent &e)
 {
-	draggingSq = draggingHue = draggingAlpha = false;
+	if (eyeBounds.contains(e.position)) {
+		eyePicking = true;
+	}
+	else if (eyePicking) eyePicking = false;
+
+	draggingSq = draggingHue = draggingAlpha = eyePressed = false;
+	repaint(eyeBounds.toNearestInt());
 }
 
 void ColorPickerPopup::textEditorReturnKeyPressed(juce::TextEditor &)
@@ -131,7 +140,11 @@ void ColorPickerPopup::colourChanged(juce::Colour &c, ColorSource s)
 {
 	currentColour = c;
 
-	if (s == ColorSource::HEX || s == ColorSource::None || s == ColorSource::Swatch)
+	if (s == ColorSource::None || 
+		s == ColorSource::HEX || 
+		s == ColorSource::Swatch ||
+		s == ColorSource::Eyedropped
+		)
 	{
 		currentSqX = currentColour.getSaturation();
 		currentSqY = 1.0f - currentColour.getBrightness();
@@ -192,7 +205,8 @@ void ColorPickerPopup::applyHex()
 	case 7:
 		txt = juce::String::charToString(txt[6]) + txt[6] + txt.substring(0, 6);
 		break; // RRGGBBAA -> AARRGGBB
-	case 8:
+	case 8: // RRGGBBAA -> AARRGGBB
+		txt = txt.substring(6) + txt.substring(0, 6);
 		break;
 	default:
 		alpha = true;
@@ -330,19 +344,16 @@ void ColorPickerPopup::paintAlphaSlider(juce::Graphics &g)
 
 void ColorPickerPopup::paintEyedropper(juce::Graphics &g)
 {
-	// Фон/рамка при ховере/нажатии
-	g.setColour(eyeHovered ? juce::Colour(0xFFF0F0F0) : juce::Colours::transparentWhite);
+	auto style = PEnums::ToolBtnStyles::Default;
+	if (eyePressed || eyePicking) style = PEnums::ToolBtnStyles::Pressed;
+	else if (eyeHovered) style = PEnums::ToolBtnStyles::Hover;
+	style = PEnums::ToolBtnStyles::Disabled;
+	g.setColour(style.bgColor);
 	g.fillRoundedRectangle(eyeBounds, 2.0f);
-	g.setColour(eyePressed ? juce::Colour(0xFFBEBEBE) : juce::Colour(0xFFE0E0E0));
+	g.setColour(style.strokeColor);
 	g.drawRoundedRectangle(eyeBounds.reduced(0.5f), 2.0f, 1.0f);
 
-	g.setColour(juce::Colours::darkgrey);
-	juce::Path p;
-	p.addTriangle(
-		eyeBounds.getX() + 2, eyeBounds.getY() + 8,
-		eyeBounds.getRight() - 2, eyeBounds.getY() + 2,
-		eyeBounds.getRight() - 2, eyeBounds.getY() + 8);
-	g.fillPath(p);
+	PEnums::Icons::draw(g, &PEnums::Icons::Eyedropper, eyeBounds.reduced(2), style.iconColor);
 }
 
 void ColorPickerPopup::paintSwatchGrid(juce::Graphics &g)

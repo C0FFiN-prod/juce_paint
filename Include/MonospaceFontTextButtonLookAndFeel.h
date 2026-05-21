@@ -1,7 +1,8 @@
 ﻿#pragma once
 #include "../JuceLibraryCode/JuceHeader.h"
+#include "../Include/CustomLookAndFeel.h"
 
-class MonospaceFontTextButtonLookAndFeel : public juce::LookAndFeel_V4
+class MonospaceFontTextButtonLookAndFeel : public CustomLookAndFeel
 {
 public:
     juce::Font getTextButtonFont(juce::TextButton &, int buttonHeight) override

@@ -3,8 +3,6 @@
 #include "../Include/CanvasSizeComponent.h"
 #include "../Include/Application.h"
 
-#define _(x) juce::String::fromUTF8(u8#x)
-
 CanvasComponent::CanvasComponent() : camera(*this)
 {
 	juce::Graphics g(canvasImage);
@@ -21,11 +19,9 @@ CanvasComponent::CanvasComponent() : camera(*this)
 	addAndMakeVisible(horizontalScroll);
 	addAndMakeVisible(verticalScroll);
 
-	horizontalScroll.setColour(juce::ScrollBar::ColourIds::thumbColourId, juce::Colour(0xFFBEBEBE));
 	horizontalScroll.setRangeLimits(0.0, 1.0);
 	horizontalScroll.setCurrentRange(0.0, 1.0);
 
-	verticalScroll.setColour(juce::ScrollBar::ColourIds::thumbColourId, juce::Colour(0xFFBEBEBE));
 	verticalScroll.setRangeLimits(0.0, 1.0);
 	verticalScroll.setCurrentRange(0.0, 1.0);
 
@@ -46,7 +42,7 @@ void CanvasComponent::clearCanvas()
 
 void CanvasComponent::setBgColour(juce::Colour col) { 
 	bgColour = col; 
-	repaint(canvasImageRect.toNearestInt());
+	repaint(canvasImageRect.expanded(50).toNearestInt());
 }
 
 void CanvasComponent::setTool(PEnums::CanvasTool tool) { 
@@ -286,7 +282,7 @@ void CanvasComponent::mouseDrag(const juce::MouseEvent& e)
 	{
 		setFlag(CanvasFlags::Drawing, false);
 		currentStroke.clear();
-		repaint(canvasImageRect.toNearestInt());
+		repaint(canvasImageRect.expanded(50).toNearestInt());
 		return;
 	}
 
@@ -298,7 +294,7 @@ void CanvasComponent::mouseDrag(const juce::MouseEvent& e)
 		updateScrollbars();
 		//repaintToCursor(currentPos);
 		resizeImageRect();
-		repaint(canvasImageRect.expanded(std::abs(delta.x) + camera.wiggle, std::abs(delta.y) + camera.wiggle).toNearestInt());
+		repaint(canvasImageRect.expanded(50).expanded(std::abs(delta.x) + camera.wiggle, std::abs(delta.y) + camera.wiggle).toNearestInt());
 		if (onCameraChanged) onCameraChanged();
 		return;
 	}
@@ -393,11 +389,11 @@ void CanvasComponent::redrawImageWithTransform(int w, int h, const juce::AffineT
 	g.drawImageTransformed(canvasImage, t);
 	canvasImage = std::move(newImg);
 	if (onCameraChanged) onCameraChanged();
-	repaint(canvasImageRect.toNearestInt());
+	repaint(canvasImageRect.expanded(50).toNearestInt());
 	camera.resized();
 	resizeImageRect();
 	if (onImageChanged) onImageChanged();
-	repaint(canvasImageRect.toNearestInt());
+	repaint(canvasImageRect.expanded(50).toNearestInt());
 }
 
 void CanvasComponent::repaintLine(juce::Point<float> start,
@@ -560,32 +556,32 @@ void CanvasComponent::getCommandInfo(juce::CommandID commandID, juce::Applicatio
 	switch (commandID)
 	{
 	case PEnums::CommandIDs::CanvasResize:
-		result.setInfo(_(Размер холста...), _(Изменить размер рабочей области), _(Изображение), 0);
-		result.addDefaultKeypress('C', juce::ModifierKeys::commandModifier);
+		result.setInfo(_("Размер холста..."), _("Изменить размер рабочей области"), _("Изображение"), 0);
+		//result.addDefaultKeypress('C', juce::ModifierKeys::commandModifier);
 		result.setActive(true);
 		break;
 	case PEnums::CommandIDs::CanvasClear:
-		result.setInfo(_(Очистить холст), _(Очистить холст), _(Изображение), 0);
-		result.addDefaultKeypress('D', juce::ModifierKeys::commandModifier);
+		result.setInfo(_("Очистить холст"), _("Очистить холст"), _("Изображение"), 0);
+		//result.addDefaultKeypress('D', juce::ModifierKeys::commandModifier);
 		result.setActive(true);
 		break;
 	case PEnums::CommandIDs::CanvasFlipH:
-		result.setInfo(_(Отразить горизонтально), _(Отражение слева направо), _(Изображение), 0);
-		result.addDefaultKeypress('F', juce::ModifierKeys::commandModifier | juce::ModifierKeys::shiftModifier);
+		result.setInfo(_("Отразить горизонтально"), _("Отражение слева направо"), _("Изображение"), 0);
+		result.addDefaultKeypress('F', juce::ModifierKeys::shiftModifier);
 		result.setActive(true);
 		break;
 	case PEnums::CommandIDs::CanvasFlipV:
-		result.setInfo(_(Отразить вертикально), _(Отражение сверху вниз), _(Изображение), 0);
-		result.addDefaultKeypress('F', juce::ModifierKeys::commandModifier);
+		result.setInfo(_("Отразить вертикально"), _("Отражение сверху вниз"), _("Изображение"), 0);
+		result.addDefaultKeypress('F', juce::ModifierKeys::commandModifier | juce::ModifierKeys::commandModifier);
 		result.setActive(true);
 		break;
 	case PEnums::CommandIDs::CanvasRotate90CW:
-		result.setInfo(_(Повернуть на 90°), _(Поворот по часовой стрелке на 90°), _(Изображение), 0);
+		result.setInfo(_("Повернуть на 90°"), _("Поворот по часовой стрелке на 90°"), _("Изображение"), 0);
 		result.addDefaultKeypress('R', juce::ModifierKeys::commandModifier);
 		result.setActive(true);
 		break;
 	case PEnums::CommandIDs::CanvasRotate90CC:
-		result.setInfo(_(Повернуть на -90°), _(Поворот против часовой стрелки на 90°), _(Изображение), 0);
+		result.setInfo(_("Повернуть на -90°"), _("Поворот против часовой стрелки на 90°"), _("Изображение"), 0);
 		result.addDefaultKeypress('R', juce::ModifierKeys::commandModifier | juce::ModifierKeys::shiftModifier);
 		result.setActive(true);
 		break;
@@ -652,10 +648,10 @@ void CanvasComponent::applyCanvasResize(int newW, int newH, int offsetX, int off
 	canvasImage = std::move(newImage);
 	if (onCameraChanged) onCameraChanged();
 	if (onImageChanged) onImageChanged();
-	repaint(canvasImageRect.toNearestInt());
+	repaint(canvasImageRect.expanded(50).toNearestInt());
 	camera.resized();
 	resizeImageRect();
-	repaint(canvasImageRect.toNearestInt());
+	repaint(canvasImageRect.expanded(50).toNearestInt());
 }
 
 void CanvasComponent::mouseWheelMove(const juce::MouseEvent& e, const juce::MouseWheelDetails& wheel)
@@ -670,9 +666,9 @@ void CanvasComponent::mouseWheelMove(const juce::MouseEvent& e, const juce::Mous
 		updateScrollbars();
 
 		if (wheel.deltaY > 0)
-			repaint(canvasImageRect.toNearestInt());
+			repaint(canvasImageRect.expanded(50).toNearestInt());
 		else
-			repaint(bImgCnvOld.toNearestInt());
+			repaint(bImgCnvOld.expanded(50).toNearestInt());
 		return;
 	}
 
@@ -768,7 +764,7 @@ void CanvasComponent::scrollBarMoved(juce::ScrollBar* scrollBar, double newStart
 	}
 
 	resizeImageRect();
-	repaint(canvasImageRect.toNearestInt());
+	repaint(canvasImageRect.expanded(50).toNearestInt());
 }
 
 void CanvasComponent::updateScrollBarLayout()

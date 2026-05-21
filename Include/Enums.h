@@ -2,6 +2,10 @@
 #include "../JuceLibraryCode/JuceHeader.h"
 #include "../Generated/IconsEmbedded.h"
 
+#define _(x) juce::String::fromUTF8(u8##x)
+
+
+
 namespace PEnums {
 	namespace Colours {
 		const juce::Colour Yellow{ 0xFFFFBB00 };
@@ -58,6 +62,12 @@ namespace PEnums {
 		AppQuit,
 	};
 
+	static const enum Formats {
+		Unknown,
+		PNG,
+		JPEG,
+	};
+
 	namespace Icons {
 		const EmbeddedIcon Triangle = IconsData::Triangle;
 		const EmbeddedIcon BiDirArrow = IconsData::BiDirArrow;
@@ -73,6 +83,7 @@ namespace PEnums {
 		const EmbeddedIcon Size = IconsData::Size;
 		const EmbeddedIcon SizeF = IconsData::SizeF;
 		const EmbeddedIcon Text = IconsData::Text;
+		const EmbeddedIcon Eyedropper = IconsData::Eyedropper;
 
 		static std::unique_ptr<juce::Drawable> create(const EmbeddedIcon& icon) {
 			return juce::Drawable::createFromImageData(icon.data, icon.size);
@@ -100,8 +111,8 @@ namespace PEnums {
 
 			const float scaledW = srcW * scale;
 			const float scaledH = srcH * scale;
-			const float dx = targetBounds.getX() + (targetBounds.getWidth() - scaledW) * 0.5f - srcX * scale;
-			const float dy = targetBounds.getY() + (targetBounds.getHeight() - scaledH) * 0.5f - srcY * scale;
+			const float dx = targetBounds.getX() / scale + (targetBounds.getWidth() - scaledW) * 0.5f - srcX * scale;
+			const float dy = targetBounds.getY() / scale + (targetBounds.getHeight() - scaledH) * 0.5f - srcY * scale;
 
 			drawable->replaceColour(juce::Colour(0xFF222222), color);
 			g.saveState();

@@ -1,8 +1,6 @@
 ﻿#include "../Include/StatusBarComponent.h"
 #include "../Include/Enums.h"
 
-#define _(x) juce::String::fromUTF8(u8#x)
-
 StatusBarComponent::StatusBarComponent(CanvasComponent& cnv) : canvas(cnv)
 {
     setOpaque(false);
@@ -10,15 +8,13 @@ StatusBarComponent::StatusBarComponent(CanvasComponent& cnv) : canvas(cnv)
     const juce::Font font(16.0f);
 
     cursorPosLabel.setJustificationType(juce::Justification::centredRight);
-    cursorPosLabel.setColour(juce::Label::ColourIds::textColourId, PEnums::Colours::Text);
     cursorPosLabel.setFont(font);
-    cursorPosLabel.setText(_(0×0), juce::dontSendNotification);
+    cursorPosLabel.setText(_("0×0"), juce::dontSendNotification);
     addAndMakeVisible(cursorPosLabel);
 
     imageSizeLabel.setJustificationType(juce::Justification::centredRight);
-    imageSizeLabel.setColour(juce::Label::ColourIds::textColourId, PEnums::Colours::Text);
     imageSizeLabel.setFont(font);
-    imageSizeLabel.setText(_(0×0 px), juce::dontSendNotification);
+    imageSizeLabel.setText(_("0×0 px"), juce::dontSendNotification);
     addAndMakeVisible(imageSizeLabel);
 
     auto zoomRange = canvas.getZoomRange();
@@ -34,7 +30,6 @@ StatusBarComponent::StatusBarComponent(CanvasComponent& cnv) : canvas(cnv)
     addAndMakeVisible(zoomSlider);
 
     zoomPercentLabel.setJustificationType(juce::Justification::centredLeft);
-    zoomPercentLabel.setColour(juce::Label::ColourIds::textColourId, PEnums::Colours::Text);
     zoomPercentLabel.setFont(font);
     zoomPercentLabel.setText("100%", juce::dontSendNotification);
 
@@ -72,8 +67,8 @@ void StatusBarComponent::updated()
 {
     if (!canvas.getCanvasImage().isValid())
     {
-        cursorPosLabel.setText(_(--×--), juce::dontSendNotification);
-        imageSizeLabel.setText(_(--×--), juce::dontSendNotification);
+        cursorPosLabel.setText(_("--×--"), juce::dontSendNotification);
+        imageSizeLabel.setText(_("--×--"), juce::dontSendNotification);
         zoomSlider.setValue(1.0, juce::dontSendNotification);
         zoomPercentLabel.setText("100%", juce::dontSendNotification);
         return;
@@ -81,13 +76,13 @@ void StatusBarComponent::updated()
 
     const int imgW = canvas.getCanvasImage().getWidth();
     const int imgH = canvas.getCanvasImage().getHeight();
-    imageSizeLabel.setText(juce::String(imgW) + _(×) + juce::String(imgH) + "px",
+    imageSizeLabel.setText(juce::String(imgW) + _("×") + juce::String(imgH) + "px",
         juce::dontSendNotification);
 
     if (canvas.isCursorOverImg()) {
         auto cursorImgPos = canvas.getCursorImgPos();
         cursorPosLabel.setText(
-            juce::String(static_cast<int>(cursorImgPos.x + 1)) + _(×) +
+            juce::String(static_cast<int>(cursorImgPos.x + 1)) + _("×") +
             juce::String(static_cast<int>(cursorImgPos.y + 1)),
             juce::dontSendNotification);
         cursorPosLabel.setVisible(true);

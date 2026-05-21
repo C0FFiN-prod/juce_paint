@@ -2,8 +2,6 @@
 #include "../Include/Application.h"
 #include "../Include/Enums.h"
 
-#define _(x) juce::String::fromUTF8(u8#x)
-
 //
 MainComponent::MainComponent(juce::DocumentWindow& w)
 	: fileManager{ w, JUCEApplication::getInstance()->getApplicationName(),
@@ -75,27 +73,27 @@ inline void MainComponent::getCommandInfo(juce::CommandID commandID, juce::Appli
 	switch (commandID)
 	{
 	case PEnums::CommandIDs::FileNew:
-		result.setInfo(_(Новый), _(Создать новый файл), _(Файл), 0);
+		result.setInfo(_("Новый"), _("Создать новый файл"), _("Файл"), 0);
 		result.addDefaultKeypress('N', juce::ModifierKeys::commandModifier);
 		result.setActive(true);
 		break;
 	case PEnums::CommandIDs::FileOpen:
-		result.setInfo(_(Открыть...), _(Открыть файл), _(Файл), 0);
+		result.setInfo(_("Открыть..."), _("Открыть файл"), _("Файл"), 0);
 		result.addDefaultKeypress('O', juce::ModifierKeys::commandModifier);
 		result.setActive(true);
 		break;
 	case PEnums::CommandIDs::FileSave:
-		result.setInfo(_(Сохранить), _(Сохранить текущий файл), _(Файл), 0);
-		result.addDefaultKeypress('S', juce::ModifierKeys::shiftModifier | juce::ModifierKeys::commandModifier);
-		result.setActive(true);
-		break;
-	case PEnums::CommandIDs::FileSaveAs:
-		result.setInfo(_(Сохранить как...), _(Сохранить в выбранный файл), _(Файл), 0);
+		result.setInfo(_("Сохранить"), _("Сохранить текущий файл"), _("Файл"), 0);
 		result.addDefaultKeypress('S', juce::ModifierKeys::commandModifier);
 		result.setActive(true);
 		break;
+	case PEnums::CommandIDs::FileSaveAs:
+		result.setInfo(_("Сохранить как..."), _("Сохранить в выбранный файл"), _("Файл"), 0);
+		result.addDefaultKeypress('S', juce::ModifierKeys::shiftModifier | juce::ModifierKeys::commandModifier);
+		result.setActive(true);
+		break;
 	case PEnums::CommandIDs::AppQuit:
-		result.setInfo(_(Выйти), _(Закрыть приложение), _(Файл), 0);
+		result.setInfo(_("Выйти"), _("Закрыть приложение"), _("Файл"), 0);
 		result.addDefaultKeypress(juce::KeyPress::F4Key, juce::ModifierKeys::altModifier);
 		result.setActive(true);
 		break;

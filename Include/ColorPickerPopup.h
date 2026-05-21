@@ -11,6 +11,7 @@ public:
     void paint(juce::Graphics &g) override;
     void resized() override;
 
+    void mouseMove(const juce::MouseEvent &e) override;
     void mouseDown(const juce::MouseEvent &e) override;
     void mouseDrag(const juce::MouseEvent &e) override;
     void mouseUp(const juce::MouseEvent &) override;
@@ -27,6 +28,7 @@ private:
         Alpha,
         HEX,
         Swatch,
+        Eyedropped,
     };
 
     void colourChanged(juce::Colour &c, ColorSource s);
@@ -55,7 +57,7 @@ private:
 
     juce::Rectangle<float> sqBounds, hueBounds, alphaBounds, eyeBounds, hexBounds, swatchBounds;
     bool draggingSq = false, draggingHue = false, draggingAlpha = false;
-    bool eyeHovered = false, eyePressed = false;
+    bool eyeHovered = false, eyePressed = false, eyePicking = false;
 
     juce::TextEditor hexEditor;
 

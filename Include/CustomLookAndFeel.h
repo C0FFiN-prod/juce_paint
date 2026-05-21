@@ -24,6 +24,25 @@ public:
         setColour(juce::PopupMenu::textColourId, PEnums::Colours::Text);
         setColour(juce::PopupMenu::highlightedBackgroundColourId, PEnums::Colours::Text.withAlpha(0.2f));
         setColour(juce::PopupMenu::highlightedTextColourId, PEnums::Colours::Text);
+        setColour(juce::AlertWindow::ColourIds::textColourId, PEnums::Colours::Text);
+        setColour(juce::AlertWindow::ColourIds::backgroundColourId, PEnums::Colours::White);
+        setColour(juce::AlertWindow::ColourIds::outlineColourId, PEnums::Colours::Gray3);
+
+        setColour(juce::TextButton::ColourIds::buttonColourId, PEnums::Colours::White);
+        setColour(juce::TextButton::ColourIds::buttonOnColourId, PEnums::Colours::White);
+        setColour(juce::TextButton::ColourIds::textColourOffId, PEnums::Colours::Text);
+        setColour(juce::TextButton::ColourIds::textColourOnId, PEnums::Colours::Text);
+
+        setColour(juce::TextEditor::ColourIds::backgroundColourId, PEnums::Colours::White);
+        setColour(juce::TextEditor::ColourIds::outlineColourId, PEnums::Colours::Gray1);
+        setColour(juce::TextEditor::ColourIds::focusedOutlineColourId, PEnums::Colours::Gray3);
+        setColour(juce::TextEditor::ColourIds::textColourId, PEnums::Colours::Text);
+        setColour(juce::TextEditor::ColourIds::highlightColourId, PEnums::Colours::Violet);
+        setColour(juce::TextEditor::ColourIds::highlightedTextColourId, PEnums::Colours::White);
+
+        setColour(juce::Label::ColourIds::textColourId, PEnums::Colours::Text);
+
+        setColour(juce::ScrollBar::ColourIds::thumbColourId, PEnums::Colours::Gray3);
     }
 
     void drawMenuBarBackground(Graphics& g, int width, int height, bool isMouseOverBar, MenuBarComponent& menuBar) override

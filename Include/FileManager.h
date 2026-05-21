@@ -1,5 +1,6 @@
 ﻿#pragma once
 #include "../JuceLibraryCode/JuceHeader.h"
+#include "../Include/Enums.h"
 
 class FileManager
 {
@@ -12,24 +13,21 @@ public:
                 LoadImageCallback onLoad,
                 GetImageCallback onGetImage);
 
-    // Основные операции
     void newFile();
     void openFile();
     void saveFile(std::function<void()> onSave = nullptr);
+    PEnums::Formats extensionToFormat(const juce::File& file);
     void saveAsFile(std::function<void()> onSave = nullptr);
 
-    // Управление состоянием
     void markAsChanged(bool changed);
     bool isChanged() const { return isModified; }
 
-    // Вызывать из MainFrame при попытке закрытия окна
-    // Возвращает true, если окно можно закрыть, false - если пользователь отменил действие
     bool handleWindowClose();
 
 private:
     void updateWindowTitle();
     void showSavePrompt(std::function<void(bool)> onDecision);
-    bool performSave(const juce::File& file);
+    bool performSave(const juce::File& file, const PEnums::Formats targetFormat = PEnums::Formats::PNG);
     void promptForOpen();
 
     juce::Component& window;

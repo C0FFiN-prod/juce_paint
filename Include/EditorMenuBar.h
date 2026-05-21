@@ -6,14 +6,7 @@ class EditorMenuBar : public juce::MenuBarModel
 public:
     EditorMenuBar();
 
-    juce::StringArray getMenuBarNames() override
-    {
-        return {
-            juce::String::fromUTF8(u8"Файл"),
-            juce::String::fromUTF8(u8"Правка"),
-            juce::String::fromUTF8(u8"Изображение"),
-        };
-    }
+    juce::StringArray getMenuBarNames() override;
 
     juce::PopupMenu getMenuForIndex(int topLevelIndex, const juce::String &) override;
 
