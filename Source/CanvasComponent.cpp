@@ -807,7 +807,7 @@ void CanvasComponent::floodFill(juce::Point<int> p, juce::uint8 tolerance)
 		return;
 
 	if (onImageChanged) onImageChanged();
-
+	juce::uint32 colourValue = currentColour.getARGB();
 	// Используем стек для scanline алгоритма
 	struct ScanLine { int x1, x2, y; };
 	std::stack<ScanLine> stack;
@@ -837,9 +837,10 @@ void CanvasComponent::floodFill(juce::Point<int> p, juce::uint8 tolerance)
 				targetColor, tolerance))
 			right++;
 
-		// Заливаем текущую строку
-		for (int i = left; i <= right; i++)
-			bitmapData.setPixelColour(i, y, currentColour);
+		juce::uint32* lineStart = reinterpret_cast<juce::uint32*>(bitmapData.getLinePointer(y));
+		juce::uint32* startX = lineStart + left;
+		juce::uint32* endX = lineStart + right + 1;
+		std::fill(startX, endX, colourValue);
 
 		// Проверяем строку выше
 		if (y > 0)
