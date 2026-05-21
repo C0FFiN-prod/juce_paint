@@ -151,7 +151,11 @@ void FileManager::saveFile(std::function<void()> onSave)
 {
 	if (!currentFile.exists() || !currentFile.existsAsFile())
 		saveAsFile(onSave);
-	else if (performSave(currentFile, extensionToFormat(currentFile)) && onSave) onSave();
+	else if (performSave(currentFile, extensionToFormat(currentFile)))
+	{
+		markAsChanged(false);
+		if (onSave) onSave();
+	}
 }
 
 PEnums::Formats FileManager::extensionToFormat(const juce::File& file) {
