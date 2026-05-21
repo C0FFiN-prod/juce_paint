@@ -567,12 +567,12 @@ void CanvasComponent::getCommandInfo(juce::CommandID commandID, juce::Applicatio
 		break;
 	case PEnums::CommandIDs::CanvasFlipH:
 		result.setInfo(_("Отразить горизонтально"), _("Отражение слева направо"), _("Изображение"), 0);
-		result.addDefaultKeypress('F', juce::ModifierKeys::shiftModifier);
+		result.addDefaultKeypress('F', juce::ModifierKeys::commandModifier);
 		result.setActive(true);
 		break;
 	case PEnums::CommandIDs::CanvasFlipV:
 		result.setInfo(_("Отразить вертикально"), _("Отражение сверху вниз"), _("Изображение"), 0);
-		result.addDefaultKeypress('F', juce::ModifierKeys::commandModifier | juce::ModifierKeys::commandModifier);
+		result.addDefaultKeypress('F', juce::ModifierKeys::commandModifier | juce::ModifierKeys::shiftModifier);
 		result.setActive(true);
 		break;
 	case PEnums::CommandIDs::CanvasRotate90CW:
@@ -606,7 +606,7 @@ bool CanvasComponent::perform(const juce::ApplicationCommandTarget::InvocationIn
 		return true;
 	case PEnums::CommandIDs::CanvasFlipH:
 		redrawImageWithTransform(canvasImage.getWidth(), canvasImage.getHeight(), 
-			horizontalFlip(canvasImage.getHeight()));
+			horizontalFlip(canvasImage.getWidth()));
 		return true;
 	case PEnums::CommandIDs::CanvasFlipV:
 		redrawImageWithTransform(canvasImage.getWidth(), canvasImage.getHeight(), 
