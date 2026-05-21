@@ -97,7 +97,7 @@ private:
     juce::ScrollBar verticalScroll{ true };
     void scrollbarPan(bool isHorizontal, bool isPositive);
 
-    void drawSigleClick(juce::Graphics& g);
+    void drawSigleClick(juce::Graphics& g, juce::Point<float>pos);
     void drawCurrentPath(juce::Graphics& g);
     void eraseLine(const juce::Point<float>& to);
     void repaintUnderCursor(juce::Point<float> pos);

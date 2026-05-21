@@ -109,15 +109,15 @@ void CanvasComponent::paint(juce::Graphics& g)
 	}
 }
 
-void CanvasComponent::drawSigleClick(juce::Graphics& g) {
+void CanvasComponent::drawSigleClick(juce::Graphics& g, juce::Point<float>pos) {
 	float expand = brushSize + 5.0f;
 	g.setColour(currentColour);
-	auto p = camera.cnv2img(lastPos);
+	auto p = camera.cnv2img(pos);
 	switch (selectedTool) {
 	case PEnums::CanvasTool::Pencil:
 		g.setImageResamplingQuality(juce::Graphics::ResamplingQuality::lowResamplingQuality);
-		g.fillRect((int)(p.x - brushSize * 0.5f),
-			(int)(p.y - brushSize * 0.5f),
+		g.fillRect(juce::roundFloatToInt(p.x - brushSize * 0.5f),
+			juce::roundFloatToInt(p.y - brushSize * 0.5f),
 			(int)brushSize, (int)brushSize);
 		break;
 	case PEnums::CanvasTool::Brush:
@@ -309,7 +309,7 @@ void CanvasComponent::mouseDrag(const juce::MouseEvent& e)
 
 			distance = currentStroke.getCurrentPosition().getDistanceFrom(newImgPos);
 
-			if (distance < 1.f) {
+			if (distance < .5f) {
 				lastPos = currentPos;
 				if (onCameraChanged) onCameraChanged();
 				return;
@@ -515,9 +515,9 @@ void CanvasComponent::mouseUp(const juce::MouseEvent& e)
 	}
 
 	if (selectedTool == PEnums::CanvasTool::Eraser) return;
-
+	auto currentPos = e.position;
 	juce::Graphics g(canvasImage);
-	const float expand = brushSize * camera.getZoom() + 5.0f;
+	const float expand = (brushSize + 1) * camera.getZoom() + 5.0f;
 	if (!currentStroke.isEmpty())
 	{
 		drawCurrentPath(g);
@@ -526,8 +526,8 @@ void CanvasComponent::mouseUp(const juce::MouseEvent& e)
 		repaint(juce::Rectangle<float>(camera.img2cnv(bStroke.getTopLeft()), camera.img2cnv(bStroke.getBottomRight())).toNearestInt());
 	}
 	else if (selectedTool == PEnums::CanvasTool::Pencil || selectedTool == PEnums::CanvasTool::Brush) {
-		drawSigleClick(g);
-		repaint(lastPos.x - expand / 2, lastPos.y - expand / 2, expand, expand);
+		drawSigleClick(g, currentPos);
+		repaint(currentPos.x - expand / 2, currentPos.y - expand / 2, expand, expand);
 	}
 	else
 	{
